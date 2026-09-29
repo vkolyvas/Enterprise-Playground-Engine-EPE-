@@ -1,0 +1,106 @@
+stages:
+
+  product:
+    llm: llm
+    retrieval:
+      strategy: hybrid
+      semantic: true
+      keyword: true
+      rerank: true
+      top_k: 12
+    knowledge:
+      - global
+      - product
+    inputs:
+      - sources/processed
+      - knowledge/global
+      - knowledge/product
+    outputs:
+      - product/definition
+      - product/catalog
+      - product/guardrails
+      - product/readiness
+    gates:
+      - gate.product.definition_complete
+      - gate.product.readiness_approved
+
+  presales:
+    llm: llm
+    retrieval:
+      strategy: hybrid
+      semantic: true
+      keyword: true
+      rerank: true
+      top_k: 16
+    knowledge:
+      - global
+      - product
+      - presales
+    inputs:
+      - product/readiness
+      - product/catalog
+      - sources/processed
+      - knowledge/presales
+    outputs:
+      - presales/discovery
+      - presales/qualification
+      - presales/scope
+      - presales/sow
+      - presales/handover
+    gates:
+      - gate.presales.qualification
+      - gate.presales.scope
+      - gate.presales.handover
+
+  architecture:
+    llm: llm
+    retrieval:
+      strategy: hybrid
+      top_k: 20
+    knowledge:
+      - global
+      - product
+      - presales
+      - architecture
+    inputs:
+      - presales/handover
+      - product/readiness
+      - sources/processed
+      - knowledge/architecture
+    outputs:
+      - architecture/validation
+      - architecture/hld
+      - architecture/security
+      - architecture/lld
+      - architecture/cost
+      - architecture/blueprint
+    gates:
+      - gate.architecture.requirements
+      - gate.architecture.hld
+      - gate.architecture.lld
+
+  delivery:
+    llm: llm
+    retrieval:
+      strategy: hybrid
+      top_k: 16
+    knowledge:
+      - global
+      - architecture
+      - delivery
+    inputs:
+      - architecture/blueprint
+      - architecture/lld
+      - sources/processed
+      - knowledge/delivery
+    outputs:
+      - delivery/plan
+      - delivery/test
+      - delivery/acceptance
+      - delivery/onboarding
+      - delivery/operations
+      - delivery/handover
+      - delivery/feedback
+    gates:
+      - gate.delivery.deployment
+      - gate.delivery.acceptance

@@ -1,0 +1,24 @@
+embedding:
+  provider: local
+  model: bge-m3
+  dimensions: 1024
+  batch_size: 32
+  normalize: true
+
+vector_store:
+  provider: in_memory          # in_memory | pgvector | chroma | qdrant
+  database: epe
+  collection_prefix: epe_
+
+llm:
+  provider: anthropic
+  model: claude-sonnet-4-5
+  max_tokens: 8192
+  temperature: 0.2
+  timeout_s: 120
+  retries: 3
+
+reranker:
+  enabled: true
+  provider: local
+  model: bge-reranker-v2-m3

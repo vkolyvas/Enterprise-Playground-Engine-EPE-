@@ -1,0 +1,37 @@
+severity_levels:
+  - info
+  - warning
+  - error
+  - blocker
+
+gate_predicates:
+  gate.product.definition_complete:
+    module: epe.validation.product.definition_complete
+    severity: blocker
+  gate.product.readiness_approved:
+    module: epe.validation.product.readiness_complete
+    severity: blocker
+  gate.presales.qualification:
+    module: epe.validation.presales.qualification_complete
+    severity: blocker
+  gate.presales.scope:
+    module: epe.validation.presales.scope_complete
+    severity: blocker
+  gate.presales.handover:
+    module: epe.validation.presales.handover_complete
+    severity: blocker
+  gate.architecture.requirements:
+    module: epe.validation.architecture.validation_complete
+    severity: blocker
+  gate.architecture.hld:
+    module: epe.validation.architecture.hld_complete
+    severity: blocker
+  gate.architecture.lld:
+    module: epe.validation.architecture.lld_complete
+    severity: blocker
+  gate.delivery.deployment:
+    module: epe.validation.delivery.deployment_complete
+    severity: blocker
+  gate.delivery.acceptance:
+    module: epe.validation.delivery.acceptance_complete
+    severity: blocker

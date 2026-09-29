@@ -1,0 +1,8 @@
+tools:
+  extractors:
+    pdf: pymupdf
+    docx: python-docx
+    xlsx: openpyxl
+    pptx: python-pptx
+    md: built-in
+    txt: built-in

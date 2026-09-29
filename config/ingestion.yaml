@@ -1,0 +1,20 @@
+extractors:
+  pdf: epe.ingestion.extractors.pdf
+  docx: epe.ingestion.extractors.docx
+  xlsx: epe.ingestion.extractors.xlsx
+  pptx: epe.ingestion.extractors.pptx
+  md: epe.ingestion.extractors.markdown
+  txt: epe.ingestion.extractors.text
+
+classifier:
+  rules: epe/ingestion/classifier/rules.yaml
+  fallback: heuristic
+
+chunking:
+  strategy: by_section
+  max_tokens: 512
+  overlap: 64
+
+deduplication:
+  enabled: true
+  by: sha256

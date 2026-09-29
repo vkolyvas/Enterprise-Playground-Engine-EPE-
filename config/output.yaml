@@ -1,0 +1,35 @@
+contracts:
+  product:
+    schema: schemas/product.schema.yaml
+    paths:
+      definition: product/definition.md
+      catalog: product/catalog.md
+      guardrails: product/guardrails.md
+      readiness: product/readiness.md
+  presales:
+    schema: schemas/presales.schema.yaml
+    paths:
+      discovery: presales/discovery.md
+      qualification: presales/qualification.md
+      scope: presales/scope.md
+      sow: presales/sow.md
+      handover: presales/handover.md
+  architecture:
+    schema: schemas/architecture.schema.yaml
+    paths:
+      validation: architecture/validation.md
+      hld: architecture/hld.md
+      security: architecture/security.md
+      lld: architecture/lld.md
+      cost: architecture/cost.md
+      blueprint: architecture/blueprint.md
+  delivery:
+    schema: schemas/delivery.schema.yaml
+    paths:
+      plan: delivery/plan.md
+      test: delivery/test.md
+      acceptance: delivery/acceptance.md
+      onboarding: delivery/onboarding.md
+      operations: delivery/operations.md
+      handover: delivery/handover.md
+      feedback: delivery/feedback.md

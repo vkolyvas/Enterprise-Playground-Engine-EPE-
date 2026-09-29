@@ -1,0 +1,7 @@
+embedding:
+  provider: local
+  model: bge-m3
+  dimensions: 1024
+  batch_size: 32
+  normalize: true
+  cache_dir: data/embedding_cache

@@ -1,0 +1,83 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://epe.local/schemas/delivery.schema.yaml
+title: EPE Delivery Contracts
+type: object
+
+definitions:
+
+  common:
+    type: object
+    required: [contract, version, stage, status, generated_at, generated_by, opportunity]
+    properties:
+      contract: { type: string }
+      version: { type: integer, minimum: 1 }
+      stage: { const: delivery }
+      status: { enum: [draft, in_review, approved, rejected] }
+      generated_at: { type: string, format: date-time }
+      generated_by: { type: string }
+      opportunity: { type: string }
+      provenance:
+        type: object
+        properties:
+          source_documents:
+            type: array
+            items: { type: string }
+      checksum_sha256: { type: string }
+      approved_by: { type: string }
+      approved_at: { type: string, format: date-time }
+
+  plan:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: delivery.plan }
+    required_sections: [sequencing, milestones, owners, dependencies, prerequisites]
+
+  test:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: delivery.test }
+    required_sections: [per_test_mapping]
+
+  acceptance:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: delivery.acceptance }
+    required_sections: [executed_tests, evidence, sign_off]
+
+  onboarding:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: delivery.onboarding }
+    required_sections: [onboarding_steps, training_plan, support_contacts]
+
+  operations:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: delivery.operations }
+    required_sections: [monitoring, alerting, slo_sla, runbooks, escalation]
+
+  handover:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: delivery.handover }
+    required_sections: [customer_handover]
+
+  feedback:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: delivery.feedback }
+    required_sections: [incidents, cost_variance, usage_telemetry, deployment_problems, customer_feedback, operational_lessons]

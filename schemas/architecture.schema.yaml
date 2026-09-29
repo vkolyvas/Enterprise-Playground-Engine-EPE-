@@ -1,0 +1,75 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://epe.local/schemas/architecture.schema.yaml
+title: EPE Architecture Contracts
+type: object
+
+definitions:
+
+  common:
+    type: object
+    required: [contract, version, stage, status, generated_at, generated_by, opportunity]
+    properties:
+      contract: { type: string }
+      version: { type: integer, minimum: 1 }
+      stage: { const: architecture }
+      status: { enum: [draft, in_review, approved, rejected] }
+      generated_at: { type: string, format: date-time }
+      generated_by: { type: string }
+      opportunity: { type: string }
+      provenance:
+        type: object
+        properties:
+          source_documents:
+            type: array
+            items: { type: string }
+      checksum_sha256: { type: string }
+      approved_by: { type: string }
+      approved_at: { type: string, format: date-time }
+
+  validation:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: architecture.validation }
+    required_sections: [per_requirement_validation, contradictions, unsupported_items, security_flags, capacity_flags, availability_flags, dependencies, cost_risks, vendor_dependencies, operational_gaps]
+
+  hld:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: architecture.hld }
+    required_sections: [drivers, constraints, options_considered, selected_option, logical_components, data_flows, nfr_mapping, decision_references]
+
+  security:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: architecture.security }
+    required_sections: [threat_model, controls, identity, data_protection, network, logging, audit, compliance]
+
+  lld:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: architecture.lld }
+    required_sections: [component_design, interfaces, data_models, configurations, failure_modes, runbook_stubs]
+
+  cost:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: architecture.cost }
+    required_sections: [line_items, assumptions, ranges, optimization_opportunities]
+
+  blueprint:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: architecture.blueprint }
+    required_sections: [scope_reference, components, implementation_tasks, environment_plan, configuration_plan, test_plan, rollout_strategy, acceptance_criteria, risks_and_mitigations, dependencies]

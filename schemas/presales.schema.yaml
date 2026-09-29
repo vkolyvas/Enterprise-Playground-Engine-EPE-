@@ -1,0 +1,86 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://epe.local/schemas/presales.schema.yaml
+title: EPE Presales Contracts
+type: object
+
+definitions:
+
+  common:
+    type: object
+    required: [contract, version, stage, status, generated_at, generated_by, opportunity, customer]
+    properties:
+      contract: { type: string }
+      version: { type: integer, minimum: 1 }
+      stage: { const: presales }
+      status: { enum: [draft, in_review, approved, rejected] }
+      generated_at: { type: string, format: date-time }
+      generated_by: { type: string }
+      opportunity: { type: string }
+      customer: { type: string }
+      provenance:
+        type: object
+        properties:
+          source_documents:
+            type: array
+            items: { type: string }
+      checksum_sha256: { type: string }
+      approved_by: { type: string }
+      approved_at: { type: string, format: date-time }
+
+  discovery:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: presales.discovery }
+    required_sections: [stakeholders, business_objectives, current_state, drivers, timeline, success_criteria]
+
+  qualification:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: presales.qualification }
+    required_sections: [budget, authority, need, timeline, fit, verdict, rationale]
+
+  scope:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: presales.scope }
+    required_sections: [in_scope, out_of_scope, assumptions, dependencies, product_capabilities, product_gaps, custom_requirements, integrations, security, sla, commercial_constraints]
+
+  sow:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: presales.sow }
+    required_sections: [parties, scope_reference, deliverables, timeline, acceptance, pricing_summary, assumptions, signatures]
+
+  handover:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: presales.handover }
+    required_sections:
+      - Opportunity
+      - Customer
+      - Business Objective
+      - Confirmed Requirements
+      - Technical Requirements
+      - Non-Functional Requirements
+      - Assumptions
+      - Constraints
+      - Product Capabilities Used
+      - Product Gaps
+      - Custom Requirements
+      - Integrations
+      - Security Requirements
+      - SLA Requirements
+      - Commercial Constraints
+      - Open Questions
+      - Architecture Decisions Required
+      - Acceptance Criteria

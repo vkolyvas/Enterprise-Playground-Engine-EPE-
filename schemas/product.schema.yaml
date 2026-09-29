@@ -1,0 +1,87 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://epe.local/schemas/product.schema.yaml
+title: EPE Product Contracts
+type: object
+
+definitions:
+
+  common:
+    type: object
+    required: [contract, version, stage, status, generated_at, generated_by]
+    properties:
+      contract: { type: string }
+      version: { type: integer, minimum: 1 }
+      stage: { const: product }
+      status: { enum: [draft, in_review, approved, rejected] }
+      generated_at: { type: string, format: date-time }
+      generated_by: { type: string }
+      provenance:
+        type: object
+        properties:
+          source_documents:
+            type: array
+            items: { type: string }
+      checksum_sha256: { type: string }
+      approved_by: { type: string }
+      approved_at: { type: string, format: date-time }
+
+  definition:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: product.definition }
+    required_sections:
+      - Product name and one-line description
+      - Problem statement
+      - Target users and personas
+      - Use cases (must/should/could)
+      - Out-of-scope (explicit non-goals)
+      - Differentiators
+      - Evidence references (with document IDs)
+
+  catalog:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: product.catalog }
+    required_columns:
+      - id
+      - capability
+      - classification   # standard | configurable | custom | unsupported
+      - depends_on
+      - notes
+
+  guardrails:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: product.guardrails }
+    required_sections:
+      - Technical limits
+      - Compliance posture
+      - Data residency
+      - Commercial constraints
+      - Things we will NOT do
+
+  readiness:
+    allOf:
+      - $ref: '#/definitions/common'
+      - type: object
+        properties:
+          contract: { const: product.readiness }
+    required_sections:
+      - What is the product?
+      - Who is it for?
+      - What problems does it solve?
+      - What does it contain?
+      - What does it NOT contain?
+      - What can Presales sell?
+      - What requires Architecture?
+      - What are the technical limits?
+      - What are the commercial constraints?
+      - What evidence exists?
+      - What is configurable?
+      - What is custom?

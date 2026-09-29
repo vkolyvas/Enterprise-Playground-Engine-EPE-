@@ -1,0 +1,12 @@
+{
+  "project_id": "MAP-9982",
+  "from_stage": "architecture",
+  "to_stage": "delivery",
+  "artifact_path": "/projects/EPE/projects/MAP-9982/architecture/blueprint.md",
+  "contract": "architecture.blueprint",
+  "checksum_sha256": "ef6dae4a3e53213950f49dc0f4cc50718c2ba5baa9c75c5ca3f541a87d020287",
+  "at": "2026-09-29T20:52:03.877328+00:00",
+  "findings": [],
+  "approved_by": "smoke-test",
+  "rationale": "Pilot dry-run."
+}

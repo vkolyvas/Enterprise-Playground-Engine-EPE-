@@ -1,0 +1,14 @@
+paths:
+  projects_root: projects
+  knowledge_root: knowledge
+  sources_root: sources
+  schemas_root: schemas
+  templates_root: templates
+  workflows_root: workflows
+  audit_root: projects/_audit
+
+logging:
+  level: INFO
+  json: true
+
+environment: dev

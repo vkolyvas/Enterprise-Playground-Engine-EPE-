@@ -1,0 +1,12 @@
+default:
+  strategy: hybrid
+  top_k: 12
+  semantic: true
+  keyword: true
+  rerank: true
+
+per_stage_overrides:
+  product: { top_k: 12 }
+  presales: { top_k: 16 }
+  architecture: { top_k: 20 }
+  delivery: { top_k: 16 }
