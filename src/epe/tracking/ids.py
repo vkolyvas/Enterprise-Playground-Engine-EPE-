@@ -1,16 +1,24 @@
 """Canonical ID patterns for EPE lifecycle entities.
 
 This module is the single source of truth for all typed ID patterns used across
-the tracking, traceability, and lineage systems. All 13 entity types are defined
+the tracking, traceability, and lineage systems. All 18 entity types are defined
 here with their regex patterns and valid edge types.
 
 Entity hierarchy (traceability spine):
-    CUST → REQ → COMP → DEC → TEST → EVD → ACCEPTANCE → AS-BUILT
+    CUST → RFP-REQ → REQ → COMP → DEL → TASK → TEST → EVD → ACCEPTANCE
 
 Cross-cutting relationships:
+    CUST ── refines ──→ RFP-REQ ── requires ──→ REQ
     REQ ── affected_by ── ASM
     REQ ── blocked_by ─── DEP
     REQ ── changed_by ─── CHG
+    REQ ── satisfied_by ──→ DEL ── contains ──→ TASK
+    TASK ── blocked_by ─── TASK
+    TASK ── critical_to ── MILESTONE
+    MILESTONE ── delivers ──→ DELIVERABLE
+    RFP-REQ ── satisfied_by ── {REQ, DEL, MS, TASK, TEST, EVD, APRV}
+    APRV ── approves ── {MS, DEL, DOCUMENT}
+    STK ── owns ── {MS, DEL, TASK}
 """
 
 from __future__ import annotations
@@ -65,7 +73,7 @@ ID_PATTERNS: dict[str, IDPattern] = {
         "TASK",
         re.compile(r"\bTASK-\d+\b"),
         "Delivery Task",
-        ["implements"],  # TASK → COMP
+        ["implements", "blocked_by", "critical_to"],  # TASK → COMP, TASK → TASK, TASK → MS
     ),
     "TEST": IDPattern(
         "TEST",
@@ -110,6 +118,37 @@ ID_PATTERNS: dict[str, IDPattern] = {
         re.compile(r"\bCHG-\d+\b"),
         "Change Request",
         ["modifies"],  # CHG → REQ
+    ),
+    # Governance entities
+    "MILESTONE": IDPattern(
+        "MILESTONE",
+        re.compile(r"\bMS-\d+\b"),
+        "Milestone",
+        ["delivers", "preceded_by"],  # MS → DEL, MS → MS
+    ),
+    "RFP_REQ": IDPattern(
+        "RFP_REQ",
+        re.compile(r"\bRFP-REQ-\d+\b"),
+        "RFP Requirement",
+        ["requires", "satisfied_by"],  # RFP-REQ → {REQ, DEL, MS, TASK, TEST, EVD, APRV}
+    ),
+    "DELIVERABLE": IDPattern(
+        "DELIVERABLE",
+        re.compile(r"\bDEL-\d+\b"),
+        "Deliverable",
+        ["contains", "evidences"],  # DEL → TASK, DEL → EVD
+    ),
+    "APPROVAL": IDPattern(
+        "APPROVAL",
+        re.compile(r"\bAPRV-\d+\b"),
+        "Approval",
+        ["approves"],  # APRV → {MS, DEL, DOCUMENT}
+    ),
+    "STAKEHOLDER": IDPattern(
+        "STAKEHOLDER",
+        re.compile(r"\bSTK-\d+\b"),
+        "Stakeholder",
+        ["owns", "delegates"],  # STK → {MS, DEL, TASK}
     ),
 }
 

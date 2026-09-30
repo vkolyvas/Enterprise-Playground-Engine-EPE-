@@ -222,6 +222,9 @@ def load_stage_engine(stage: str, ctx: StageContext) -> StageEngine:
     if stage == "delivery":
         from epe.stages.delivery.engine import DeliveryEngine
         return DeliveryEngine(ctx)
+    if stage == "governance":
+        from epe.stages.governance.engine import GovernanceEngine
+        return GovernanceEngine(ctx)
     raise EpeError(f"Unknown stage: {stage}")
 
 

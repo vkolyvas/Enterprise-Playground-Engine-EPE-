@@ -114,67 +114,6 @@ class LineageComputer:
         self._trace_from_doc(doc_id, chain, visited)
         return chain
 
-    def _trace_from_doc(
-        self,
-        doc_id: str,
-        chain: LineageChain,
-        visited: set[str],
-        *,
-        req_id: str | None = None,
-        cust_id: str | None = None,
-    ) -> None:
-        """Recursively trace from a document to its outputs."""
-        if doc_id in visited:
-            return
-        visited.add(doc_id)
-
-        doc = self.registry.get(doc_id)
-        if not doc:
-            return
-
-        # Find output documents
-        output_docs = self.registry.get_outputs(doc_id)
-        for out_doc in output_docs:
-            entry = LineageEntry(
-                from_doc=doc_id,
-                to_doc=out_doc.doc_id,
-                link_type="traces_to",
-                customer_requirement_id=cust_id,
-                requirement_id=req_id,
-                component_id=next((c for c in out_doc.components), None),
-                task_id=next((t for t in out_doc.tasks), None),
-                test_id=next((t for t in out_doc.tests), None),
-            )
-            chain.add(entry)
-            self._trace_from_doc(out_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id)
-
-        # Also trace through COMP embedded in this doc's body
-        for comp_id in doc.components:
-            comp_docs = [d for d in self.registry.documents if comp_id in d.components]
-            for comp_doc in comp_docs:
-                if comp_doc.doc_id not in visited:
-                    entry = LineageEntry(
-                        from_doc=doc_id,
-                        to_doc=comp_doc.doc_id,
-                        link_type="implements",
-                        component_id=comp_id,
-                    )
-                    chain.add(entry)
-                    self._trace_from_doc(comp_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id)
-
-        for task_id in doc.tasks:
-            task_docs = [d for d in self.registry.documents if task_id in d.tasks]
-            for task_doc in task_docs:
-                if task_doc.doc_id not in visited:
-                    entry = LineageEntry(
-                        from_doc=doc_id,
-                        to_doc=task_doc.doc_id,
-                        link_type="implements",
-                        task_id=task_id,
-                    )
-                    chain.add(entry)
-                    self._trace_from_doc(task_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id)
-
     # -------------------------------------------------------------------------
     # Backward trace: from a document to its upstream sources
     # -------------------------------------------------------------------------
@@ -282,6 +221,196 @@ class LineageComputer:
             }
 
         return matrix
+
+    # -------------------------------------------------------------------------
+    # Governance traceability (Issue 6 fix — multi-entity RFP-REQ links)
+    # -------------------------------------------------------------------------
+
+    def trace_from_milestone(self, ms_id: str) -> LineageChain:
+        """Trace a milestone forward to its deliverables, tasks, tests, and evidence.
+
+        MS-NNN
+            → DEL-NNN (deliverables)
+            → TASK-NNN (delivery tasks)
+            → TEST-NNN (acceptance tests)
+            → EVD-NNN (evidence)
+            → APRV-NNN (approvals)
+        """
+        chain = LineageChain()
+        visited: set[str] = set()
+
+        # Find documents that define this milestone
+        source_docs = self.registry.by_milestone(ms_id)
+
+        for doc in source_docs:
+            self._trace_from_doc(doc.doc_id, chain, visited, milestone_id=ms_id)
+
+        # Also trace through DEL/TASK embedded in milestone docs
+        for doc in source_docs:
+            for del_id in doc.deliverables:
+                del_docs = [d for d in self.registry.documents if del_id in d.deliverables]
+                for del_doc in del_docs:
+                    if del_doc.doc_id not in visited:
+                        entry = LineageEntry(
+                            from_doc=doc.doc_id,
+                            to_doc=del_doc.doc_id,
+                            link_type="delivers",
+                            milestone_id=ms_id,
+                            deliverable_id=del_id,
+                        )
+                        chain.add(entry)
+                        self._trace_from_doc(del_doc.doc_id, chain, visited, milestone_id=ms_id)
+
+            for task_id in doc.tasks:
+                task_docs = [d for d in self.registry.documents if task_id in d.tasks]
+                for task_doc in task_docs:
+                    if task_doc.doc_id not in visited:
+                        entry = LineageEntry(
+                            from_doc=doc.doc_id,
+                            to_doc=task_doc.doc_id,
+                            link_type="critical_to",
+                            milestone_id=ms_id,
+                            task_id=task_id,
+                        )
+                        chain.add(entry)
+                        self._trace_from_doc(task_doc.doc_id, chain, visited, milestone_id=ms_id)
+
+        return chain
+
+    def trace_from_rfp_requirement(self, rfp_id: str) -> LineageChain:
+        """Trace an RFP requirement to all linked entities.
+
+        RFP-REQ-NNN (contractual anchor)
+            → REQ-NNN (requirements)
+            → DEL-NNN (deliverables)
+            → MS-NNN (milestones)
+            → TASK-NNN (tasks)
+            → TEST-NNN (tests)
+            → EVD-NNN (evidence)
+            → APRV-NNN (approvals)
+        """
+        chain = LineageChain()
+        visited: set[str] = set()
+
+        # Find documents that reference this RFP requirement
+        source_docs = self.registry.by_rfp_requirement(rfp_id)
+
+        for doc in source_docs:
+            self._trace_from_doc(doc.doc_id, chain, visited, rfp_requirement_id=rfp_id)
+
+        # Trace through embedded entity references
+        for doc in source_docs:
+            for req_id in doc.requirements:
+                req_docs = [d for d in self.registry.documents if req_id in d.requirements]
+                for req_doc in req_docs:
+                    if req_doc.doc_id not in visited:
+                        entry = LineageEntry(
+                            from_doc=doc.doc_id,
+                            to_doc=req_doc.doc_id,
+                            link_type="requires",
+                            rfp_requirement_id=rfp_id,
+                            requirement_id=req_id,
+                        )
+                        chain.add(entry)
+                        self._trace_from_doc(req_doc.doc_id, chain, visited, rfp_requirement_id=rfp_id)
+
+            for del_id in doc.deliverables:
+                del_docs = [d for d in self.registry.documents if del_id in d.deliverables]
+                for del_doc in del_docs:
+                    if del_doc.doc_id not in visited:
+                        entry = LineageEntry(
+                            from_doc=doc.doc_id,
+                            to_doc=del_doc.doc_id,
+                            link_type="satisfied_by",
+                            rfp_requirement_id=rfp_id,
+                            deliverable_id=del_id,
+                        )
+                        chain.add(entry)
+                        self._trace_from_doc(del_doc.doc_id, chain, visited, rfp_requirement_id=rfp_id)
+
+            for task_id in doc.tasks:
+                task_docs = [d for d in self.registry.documents if task_id in d.tasks]
+                for task_doc in task_docs:
+                    if task_doc.doc_id not in visited:
+                        entry = LineageEntry(
+                            from_doc=doc.doc_id,
+                            to_doc=task_doc.doc_id,
+                            link_type="satisfied_by",
+                            rfp_requirement_id=rfp_id,
+                            task_id=task_id,
+                        )
+                        chain.add(entry)
+                        self._trace_from_doc(task_doc.doc_id, chain, visited, rfp_requirement_id=rfp_id)
+
+        return chain
+
+    def _trace_from_doc(
+        self,
+        doc_id: str,
+        chain: LineageChain,
+        visited: set[str],
+        *,
+        req_id: str | None = None,
+        cust_id: str | None = None,
+        milestone_id: str | None = None,
+        rfp_requirement_id: str | None = None,
+    ) -> None:
+        """Recursively trace from a document to its outputs."""
+        if doc_id in visited:
+            return
+        visited.add(doc_id)
+
+        doc = self.registry.get(doc_id)
+        if not doc:
+            return
+
+        # Find output documents
+        output_docs = self.registry.get_outputs(doc_id)
+        for out_doc in output_docs:
+            entry = LineageEntry(
+                from_doc=doc_id,
+                to_doc=out_doc.doc_id,
+                link_type="traces_to",
+                customer_requirement_id=cust_id,
+                requirement_id=req_id,
+                component_id=next((c for c in out_doc.components), None),
+                task_id=next((t for t in out_doc.tasks), None),
+                test_id=next((t for t in out_doc.tests), None),
+                milestone_id=milestone_id,
+                rfp_requirement_id=rfp_requirement_id,
+            )
+            chain.add(entry)
+            self._trace_from_doc(out_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id,
+                               milestone_id=milestone_id, rfp_requirement_id=rfp_requirement_id)
+
+        # Also trace through COMP embedded in this doc's body
+        for comp_id in doc.components:
+            comp_docs = [d for d in self.registry.documents if comp_id in d.components]
+            for comp_doc in comp_docs:
+                if comp_doc.doc_id not in visited:
+                    entry = LineageEntry(
+                        from_doc=doc_id,
+                        to_doc=comp_doc.doc_id,
+                        link_type="implements",
+                        component_id=comp_id,
+                    )
+                    chain.add(entry)
+                    self._trace_from_doc(comp_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id,
+                                       milestone_id=milestone_id, rfp_requirement_id=rfp_requirement_id)
+
+        for task_id in doc.tasks:
+            task_docs = [d for d in self.registry.documents if task_id in d.tasks]
+            for task_doc in task_docs:
+                if task_doc.doc_id not in visited:
+                    entry = LineageEntry(
+                        from_doc=doc_id,
+                        to_doc=task_doc.doc_id,
+                        link_type="implements",
+                        task_id=task_id,
+                    )
+                    chain.add(entry)
+                    self._trace_from_doc(task_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id,
+                                       milestone_id=milestone_id, rfp_requirement_id=rfp_requirement_id)
 
     # -------------------------------------------------------------------------
     # Stage handoff completeness

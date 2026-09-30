@@ -15,6 +15,16 @@ from typing import Any
 from epe.core.frontmatter import write_doc
 from epe.tracking.ids import ID_PATTERNS, scan_ids
 
+# Mapping from ID pattern key (ID_PATTERNS dict key) to directory name.
+# Some entity directories use short names for compatibility with other systems.
+_ENTITY_DIR_NAME: dict[str, str] = {
+    "MILESTONE": "ms",
+    "RFP_REQ": "rfp-req",
+    "DELIVERABLE": "del",
+    "APPROVAL": "aprv",
+    "STAKEHOLDER": "stk",
+}
+
 
 def emit_entity_files(
     artifact_body: str,
@@ -59,7 +69,9 @@ def emit_entity_files(
         if not ids_found:
             continue
 
-        entity_dir = output_dir / entity_type.lower()
+        # Use short directory name if mapped, otherwise use entity_type.lower()
+        dir_name = _ENTITY_DIR_NAME.get(entity_type, entity_type.lower())
+        entity_dir = output_dir / dir_name
         entity_dir.mkdir(parents=True, exist_ok=True)
 
         for entity_id in sorted(ids_found):

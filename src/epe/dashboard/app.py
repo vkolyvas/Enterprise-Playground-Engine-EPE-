@@ -18,6 +18,11 @@ from epe.dashboard.projections import (
     lifecycle_stage_view,
     lifecycle_lineage_view,
     lifecycle_gates_view,
+    solution_manager_cockpit,
+    governance_summary,
+    milestone_summary,
+    task_summary,
+    rfp_summary,
 )
 
 
@@ -94,6 +99,42 @@ def create_app(*, config_path: Path | None = None) -> FastAPI:
         if not proj_root.exists():
             raise HTTPException(404, f"No such project: {project_id}")
         return lifecycle_gates_view(proj_root)
+
+    # Governance views
+    @app.get("/projects/{project_id}/governance/cockpit")
+    def get_governance_cockpit(project_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return solution_manager_cockpit(proj_root)
+
+    @app.get("/projects/{project_id}/governance/summary")
+    def get_governance_summary(project_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return governance_summary(proj_root)
+
+    @app.get("/projects/{project_id}/governance/milestones")
+    def get_milestone_summary(project_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return milestone_summary(proj_root)
+
+    @app.get("/projects/{project_id}/governance/tasks")
+    def get_task_summary(project_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return task_summary(proj_root)
+
+    @app.get("/projects/{project_id}/governance/rfp")
+    def get_rfp_summary(project_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return rfp_summary(proj_root)
 
     return app
 

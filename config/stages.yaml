@@ -104,3 +104,34 @@ stages:
     gates:
       - gate.delivery.deployment
       - gate.delivery.acceptance
+
+  # Governance overlay — cross-cutting, NOT sequential
+  # llm: "none" means deterministic derivation (no LLM involved)
+  governance:
+    type: overlay
+    llm: "none"
+    retrieval:
+      strategy: none
+      semantic: false
+      keyword: false
+      rerank: false
+      top_k: 0
+    knowledge: []
+    inputs:
+      - entities/ms
+      - entities/task
+      - entities/rfp-req
+      - entities/del
+      - entities/aprv
+      - entities/stk
+    outputs:
+      - governance/milestone-register
+      - governance/task-register
+      - governance/rfp-obligations
+      - governance/traceability-matrix
+      - governance/governance
+      - product/product-control
+      - presales/presales-control
+      - architecture/solution-manager-cockpit
+      - delivery/delivery-control
+    gates: []  # NEVER gates — overlay, not sequential

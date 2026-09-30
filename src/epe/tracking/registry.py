@@ -19,6 +19,12 @@ from epe.tracking.models import (
     DocumentType,
     DocumentLink,
     LinkType,
+    Task,
+    Milestone,
+    RfpRequirement,
+    Deliverable,
+    Approval,
+    Stakeholder,
 )
 
 logger = get_logger("tracking.registry")
@@ -58,6 +64,8 @@ def _stage_from_path(path: Path) -> str | None:
         return "architecture"
     if "delivery" in parts:
         return "delivery"
+    if "entities" in parts:
+        return "governance"
     return None
 
 
@@ -114,6 +122,7 @@ class DocumentRegistry:
                 self._register(md_file, project_root)
 
         # Also scan entity subdirectories for standalone entity docs
+        # Legacy flat entity directories
         for subdir in ["requirements", "decisions", "risks", "questions",
                        "assumptions", "dependencies", "changes", "evidence"]:
             subdir_path = project_root / subdir
@@ -121,6 +130,15 @@ class DocumentRegistry:
                 continue
             for md_file in subdir_path.glob("*.md"):
                 self._register(md_file, project_root)
+
+        # Governance entity subdirectories (nested under entities/)
+        # Structure: entities/ms/, entities/rfp-req/, entities/del/, entities/aprv/, entities/stk/
+        entities_base = project_root / "entities"
+        if entities_base.is_dir():
+            for entity_type_dir in entities_base.iterdir():
+                if entity_type_dir.is_dir():
+                    for md_file in entity_type_dir.glob("*.md"):
+                        self._register(md_file, project_root)
 
     def _register(self, path: Path, project_root: Path) -> None:
         """Register a single document file."""
@@ -170,6 +188,12 @@ class DocumentRegistry:
             assumptions=body_ids.get("ASM", []),
             dependencies=body_ids.get("DEP", []),
             changes=body_ids.get("CHG", []),
+            # Governance entities
+            milestones=body_ids.get("MILESTONE", []),
+            rfp_requirements=body_ids.get("RFP_REQ", []),
+            deliverables=body_ids.get("DELIVERABLE", []),
+            approvals=body_ids.get("APPROVAL", []),
+            stakeholders=body_ids.get("STAKEHOLDER", []),
             supersedes=doc.get("supersedes"),
             superseded_by=doc.get("superseded_by"),
         )
@@ -229,9 +253,40 @@ class DocumentRegistry:
                 output_doc_ids.add(link.to_doc)
         return [self._documents[d] for d in output_doc_ids if d in self._documents]
 
+    def by_milestone(self, milestone_id: str) -> list[DocumentRecord]:
+        """All documents that reference a given milestone (MS-NNN)."""
+        return [d for d in self._documents.values() if milestone_id in d.milestones]
+
+    def by_rfp_requirement(self, rfp_req_id: str) -> list[DocumentRecord]:
+        """All documents that reference a given RFP requirement (RFP-REQ-NNN)."""
+        return [d for d in self._documents.values() if rfp_req_id in d.rfp_requirements]
+
+    def by_deliverable(self, del_id: str) -> list[DocumentRecord]:
+        """All documents that reference a given deliverable (DEL-NNN)."""
+        return [d for d in self._documents.values() if del_id in d.deliverables]
+
+    def by_approval(self, aprv_id: str) -> list[DocumentRecord]:
+        """All documents that reference a given approval (APRV-NNN)."""
+        return [d for d in self._documents.values() if aprv_id in d.approvals]
+
+    def by_stakeholder(self, stk_id: str) -> list[DocumentRecord]:
+        """All documents that reference a given stakeholder (STK-NNN)."""
+        return [d for d in self._documents.values() if stk_id in d.stakeholders]
+
+    def by_entity(self, entity_id: str) -> list[DocumentRecord]:
+        """All documents that reference a given entity (any type)."""
+        return [
+            d for d in self._documents.values()
+            if entity_id in (d.milestones + d.rfp_requirements + d.deliverables +
+                            d.approvals + d.stakeholders + d.requirements +
+                            d.customer_requirements + d.components + d.decisions +
+                            d.tasks + d.tests + d.evidence + d.risks +
+                            d.assumptions + d.dependencies + d.changes)
+        ]
+
     def stage_summary(self) -> dict[str, dict[str, Any]]:
         """Summarize document counts and statuses per stage."""
-        stages = ["product", "presales", "architecture", "delivery"]
+        stages = ["product", "presales", "architecture", "delivery", "governance"]
         summary: dict[str, dict[str, Any]] = {}
         for stage in stages:
             docs = self.by_stage(stage)

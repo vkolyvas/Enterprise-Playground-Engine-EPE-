@@ -83,7 +83,72 @@ _FILENAME_TO_CONTRACT: dict[str, str] = {
     "operations": "delivery.operations",
     "handover_d": "delivery.handover",  # delivery/handover.md uses key handover_d
     "feedback": "delivery.feedback",
+    # Governance entity files
+    "MS-001": "governance.milestone",
+    "TASK-001": "governance.task",
+    "RFP-REQ-001": "governance.rfp_requirement",
+    "DEL-001": "governance.deliverable",
+    "APRV-001": "governance.approval",
+    "STK-001": "governance.stakeholder",
 }
+
+
+# ---------------------------------------------------------------------------
+# Document category separation (Issue 7 fix)
+# ---------------------------------------------------------------------------
+
+# Document category enum
+class GovernanceDocumentCategory:
+    """Document category for validation severity determination."""
+    AUTHORITATIVE_ENTITY = "authoritative_entity"  # Entity files — WARNING if incomplete
+    DERIVED_VIEW = "derived_view"                   # Auto-generated — never "missing"
+    MANDATORY_PROJECT = "mandatory_project"          # Governance required — WARNING if missing
+    OPTIONAL = "optional"                            # INFO if missing
+
+
+# Governance entity files that should exist (authoritative data)
+_GOVERNANCE_ENTITY_FILES: set[str] = {
+    "entities/ms/MS-001.md",
+    "entities/task/TASK-001.md",
+    "entities/rfp-req/RFP-REQ-001.md",
+    "entities/del/DEL-001.md",
+    "entities/aprv/APRV-001.md",
+    "entities/stk/STK-001.md",
+}
+
+# Derived governance views (auto-generated — never "missing")
+_DERIVED_DOCUMENTS: set[str] = {
+    "governance/milestone-register.md",
+    "governance/task-register.md",
+    "governance/rfp-obligations.md",
+    "governance/traceability-matrix.md",
+    "governance/governance.md",
+    "architecture/solution-manager-cockpit.md",
+    "product/product-control.md",
+    "presales/presales-control.md",
+    "delivery/delivery-control.md",
+}
+
+# Optional governance documents
+_OPTIONAL_DOCUMENTS: set[str] = {
+    "governance/decision-log.md",
+    "governance/project-plan.md",
+}
+
+
+def _get_document_category(path: str) -> str:
+    """Determine the validation category for a document path."""
+    if path in _DERIVED_DOCUMENTS:
+        return GovernanceDocumentCategory.DERIVED_VIEW
+    if path in _GOVERNANCE_ENTITY_FILES:
+        return GovernanceDocumentCategory.AUTHORITATIVE_ENTITY
+    if path in _OPTIONAL_DOCUMENTS:
+        return GovernanceDocumentCategory.OPTIONAL
+    # Check if it's a stage mandatory doc
+    for stage_docs in _MANDATORY_DOCUMENTS.values():
+        if path in stage_docs:
+            return GovernanceDocumentCategory.MANDATORY_PROJECT
+    return GovernanceDocumentCategory.MANDATORY_PROJECT  # Default to mandatory project
 
 
 def validate_document_completeness(
@@ -268,4 +333,117 @@ def validate_all(
         "overall_status": "READY" if all_ready and overall_blockers == 0 else "BLOCKED",
         "overall_blockers": overall_blockers,
         "gate_status": gate_status,
+    }
+
+
+def validate_governance_completeness(
+    project_root: Path,
+) -> dict[str, Any]:
+    """Validate governance entity file completeness.
+
+    Governance entities are authoritative data — they should exist and have
+    complete frontmatter. However, governance completeness is WARNING severity,
+    never BLOCKER (governance does NOT block stage transitions).
+
+    Derived views (milestone-register.md, etc.) are NEVER checked as missing.
+    """
+    findings = []
+
+    # Check entity directories exist
+    entities_base = project_root / "entities"
+    entity_dirs = ["ms", "task", "rfp-req", "del", "aprv", "stk"]
+
+    for dir_name in entity_dirs:
+        entity_dir = entities_base / dir_name
+        if not entity_dir.is_dir():
+            findings.append(
+                make_finding(
+                    validator="governance_completeness",
+                    severity="warning",
+                    location=str(entity_dir),
+                    message=f"Governance entity directory '{dir_name}' does not exist.",
+                    remediation=f"Create {entity_dir} to store entity files.",
+                    kind="missing_entity_dir",
+                )
+            )
+            continue
+
+        # Check for at least one entity file
+        entity_files = list(entity_dir.glob("*.md"))
+        if not entity_files:
+            findings.append(
+                make_finding(
+                    validator="governance_completeness",
+                    severity="warning",
+                    location=str(entity_dir),
+                    message=f"No entity files found in '{dir_name}/' directory.",
+                    remediation=f"Create entity files in {entity_dir}/ to define governance data.",
+                    kind="empty_entity_dir",
+                )
+            )
+
+        # Check each entity file for required frontmatter
+        for entity_file in entity_files:
+            doc = None
+            try:
+                doc = read_doc(entity_file)
+            except Exception as exc:
+                findings.append(
+                    make_finding(
+                        validator="governance_completeness",
+                        severity="warning",
+                        location=str(entity_file),
+                        message=f"Failed to read entity file: {exc}",
+                        remediation=f"Fix or remove corrupted file {entity_file}",
+                        kind="corrupt_entity_file",
+                    )
+                )
+                continue
+
+            # Check required fields based on entity type
+            required_fields = ["title", "status"]
+            if dir_name == "ms":
+                required_fields.extend(["phase", "baseline_end"])
+            elif dir_name == "task":
+                required_fields.extend(["status", "baseline_end"])
+
+            for field in required_fields:
+                if not doc.get(field):
+                    findings.append(
+                        make_finding(
+                            validator="governance_completeness",
+                            severity="warning",
+                            location=str(entity_file),
+                            message=f"Entity file missing required field '{field}'.",
+                            remediation=f"Add '{field}' to the frontmatter of {entity_file}",
+                            kind="incomplete_entity",
+                        )
+                    )
+
+    # Check derived documents exist (WARNING if missing, never BLOCKER)
+    for doc_path in _DERIVED_DOCUMENTS:
+        full_path = project_root / doc_path
+        if not full_path.exists():
+            findings.append(
+                make_finding(
+                    validator="governance_completeness",
+                    severity="warning",
+                    location=str(full_path),
+                    message=f"Derived governance view '{doc_path}' is missing.",
+                    remediation=f"Run governance engine to generate {doc_path}",
+                    kind="missing_derived",
+                )
+            )
+
+    # Summary
+    warning_count = sum(1 for f in findings if f.severity == "warning")
+    error_count = sum(1 for f in findings if f.severity == "error")
+
+    return {
+        "project_id": project_root.name,
+        "governance_complete": warning_count == 0 and error_count == 0,
+        "warning_count": warning_count,
+        "error_count": error_count,
+        "severity": "error" if error_count > 0 else "warning" if warning_count > 0 else "ok",
+        "findings": [f.to_dict() for f in findings],
     }

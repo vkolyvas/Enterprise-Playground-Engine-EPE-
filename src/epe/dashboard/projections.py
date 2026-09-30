@@ -285,3 +285,328 @@ def project_dashboard_markdown(project_root: Path) -> str:
             lines.append(f"- {a['name']} — `{a['contract']}` — status: {status}")
         lines.append("")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Governance projections
+# ---------------------------------------------------------------------------
+
+
+def solution_manager_cockpit(project_root: Path) -> dict:
+    """Solution Manager operating cockpit — answers 5 critical questions.
+
+    This is the CENTERPIECE governance view for Solution Managers.
+    """
+    from datetime import date, timedelta
+    from epe.stages.governance.critical_path import build_schedule_network
+    from epe.stages.governance.registry_derive import load_all_entities
+
+    entities = load_all_entities(project_root)
+    milestones = entities.get("milestones", [])
+    tasks = entities.get("tasks", [])
+
+    today = date.today()
+    two_weeks = today + timedelta(days=14)
+
+    # 1. What must I do? (owned items)
+    my_milestones = [m for m in milestones if m.get("owner")]
+    my_tasks = [t for t in tasks if t.get("owner")]
+
+    # 2. What is overdue?
+    overdue_tasks = []
+    for t in tasks:
+        fe = t.get("forecast_end")
+        if fe and _parse_date(fe) and _parse_date(fe) < today and t.get("status") != "done":
+            overdue_tasks.append(t)
+
+    overdue_milestones = []
+    for m in milestones:
+        fe = m.get("forecast_end")
+        if fe and _parse_date(fe) and _parse_date(fe) < today and m.get("status") != "achieved":
+            overdue_milestones.append(m)
+
+    # 3. What is blocking me?
+    blocking_tasks = [t for t in tasks if t.get("blocking")]
+    task_blockers = []
+    for t in tasks:
+        for blocked_by_id in t.get("blocked_by", []):
+            blocker = next((x for x in tasks if x.get("id") == blocked_by_id), None)
+            if blocker and blocker.get("status") != "done":
+                task_blockers.append({
+                    "blocker_id": blocked_by_id,
+                    "blocker_title": blocker.get("title", "?"),
+                    "blocked_id": t.get("id"),
+                    "blocked_title": t.get("title", "?"),
+                })
+
+    # 4. What is coming next? (next 14 days)
+    coming_milestones = []
+    for m in milestones:
+        fs = m.get("forecast_start")
+        if fs and _parse_date(fs) and _parse_date(fs) <= two_weeks:
+            coming_milestones.append(m)
+
+    coming_tasks = []
+    for t in tasks:
+        fs = t.get("forecast_start")
+        if fs and _parse_date(fs) and _parse_date(fs) <= two_weeks and t.get("status") == "todo":
+            coming_tasks.append(t)
+
+    # 5. What can cause committed date to be missed? (critical path)
+    network = build_schedule_network(tasks, milestones)
+    critical_chain = network.get_critical_chain()
+
+    critical_path_risks = []
+    for item in critical_chain:
+        variance = item.schedule_variance_days
+        if variance is not None and variance > 0:
+            critical_path_risks.append({
+                "id": item.id,
+                "type": item.item_type,
+                "title": item.title,
+                "variance_days": variance,
+                "forecast_end": str(item.forecast_end),
+                "baseline_end": str(item.baseline_end),
+                "impact": "Delays propagate to final committed date",
+            })
+
+    # Compute committed final date (last milestone baseline end)
+    final_milestone = None
+    for m in sorted(milestones, key=lambda x: x.get("baseline_end", ""), reverse=True):
+        final_milestone = m
+        break
+
+    return {
+        "project_id": project_root.name,
+        "generated_at": today.isoformat(),
+        "committed_final_date": final_milestone.get("baseline_end") if final_milestone else None,
+        "my_milestones": [
+            {"id": m.get("id"), "title": m.get("title"), "status": m.get("status"),
+             "baseline_end": m.get("baseline_end")}
+            for m in my_milestones
+        ],
+        "my_tasks": [
+            {"id": t.get("id"), "title": t.get("title"), "status": t.get("status"),
+             "baseline_end": t.get("baseline_end")}
+            for t in my_tasks
+        ],
+        "overdue": {
+            "milestones": [{"id": m.get("id"), "title": m.get("title"), "forecast_end": m.get("forecast_end")}
+                          for m in overdue_milestones],
+            "tasks": [{"id": t.get("id"), "title": t.get("title"), "forecast_end": t.get("forecast_end")}
+                     for t in overdue_tasks],
+            "count": len(overdue_milestones) + len(overdue_tasks),
+        },
+        "blockers": {
+            "task_blockers": task_blockers,
+            "blocking_tasks": [{"id": t.get("id"), "title": t.get("title")} for t in blocking_tasks],
+            "count": len(task_blockers) + len(blocking_tasks),
+        },
+        "coming_next": {
+            "milestones": [{"id": m.get("id"), "title": m.get("title"), "forecast_start": m.get("forecast_start")}
+                          for m in sorted(coming_milestones, key=lambda x: x.get("forecast_start", ""))[:5]],
+            "tasks": [{"id": t.get("id"), "title": t.get("title"), "forecast_start": t.get("forecast_start")}
+                     for t in sorted(coming_tasks, key=lambda x: x.get("forecast_start", ""))[:10]],
+        },
+        "critical_path": {
+            "chain": [{"id": i.id, "title": i.title, "float_days": i.float_days} for i in critical_chain],
+            "at_risk_items": critical_path_risks,
+            "committed_date_at_risk": len(critical_path_risks) > 0,
+        },
+        "metrics": {
+            "total_tasks": len(tasks),
+            "completed_tasks": sum(1 for t in tasks if t.get("status") == "done"),
+            "total_milestones": len(milestones),
+            "achieved_milestones": sum(1 for m in milestones if m.get("status") == "achieved"),
+            "at_risk_milestones": sum(1 for m in milestones if m.get("status") == "at_risk"),
+            "schedule_variance_days": sum(
+                (m.get("schedule_variance_days") or 0) for m in milestones if m.get("schedule_variance_days")
+            ),
+        },
+    }
+
+
+def governance_summary(project_root: Path) -> dict:
+    """Full governance summary across all entity types."""
+    from epe.stages.governance.registry_derive import load_all_entities
+    from epe.stages.governance.critical_path import build_schedule_network
+
+    entities = load_all_entities(project_root)
+    milestones = entities.get("milestones", [])
+    tasks = entities.get("tasks", [])
+    rfp_reqs = entities.get("rfp_requirements", [])
+    deliverables = entities.get("deliverables", [])
+    approvals = entities.get("approvals", [])
+    stakeholders = entities.get("stakeholders", [])
+
+    network = build_schedule_network(tasks, milestones)
+    critical_chain = network.get_critical_chain()
+
+    return {
+        "project_id": project_root.name,
+        "milestones": {
+            "total": len(milestones),
+            "achieved": sum(1 for m in milestones if m.get("status") == "achieved"),
+            "at_risk": sum(1 for m in milestones if m.get("status") == "at_risk"),
+            "pending": sum(1 for m in milestones if m.get("status") in ("pending", "in_progress")),
+            "critical": len([m for m in milestones if m.get("critical")]),
+        },
+        "tasks": {
+            "total": len(tasks),
+            "done": sum(1 for t in tasks if t.get("status") == "done"),
+            "blocked": sum(1 for t in tasks if t.get("status") == "blocked"),
+            "critical": len([t for t in tasks if t.get("critical")]),
+        },
+        "rfp_requirements": {
+            "total": len(rfp_reqs),
+            "satisfied": sum(1 for r in rfp_reqs if r.get("status") == "satisfied"),
+            "unaddressed": sum(1 for r in rfp_reqs if r.get("status") == "unaddressed"),
+            "in_progress": sum(1 for r in rfp_reqs if r.get("status") == "in_progress"),
+            "mandatory": sum(1 for r in rfp_reqs if r.get("mandatory", True)),
+        },
+        "deliverables": {
+            "total": len(deliverables),
+            "accepted": sum(1 for d in deliverables if d.get("status") == "accepted"),
+            "pending": sum(1 for d in deliverables if d.get("status") in ("pending", "in_progress")),
+        },
+        "approvals": {
+            "total": len(approvals),
+            "approved": sum(1 for a in approvals if a.get("status") == "approved"),
+            "pending": sum(1 for a in approvals if a.get("status") == "pending"),
+        },
+        "stakeholders": {
+            "total": len(stakeholders),
+            "active": sum(1 for s in stakeholders if s.get("status") == "active"),
+        },
+        "critical_chain": [i.id for i in critical_chain],
+    }
+
+
+def milestone_summary(project_root: Path) -> dict:
+    """Milestone status summary with critical-path info."""
+    from epe.stages.governance.registry_derive import load_all_entities
+    from epe.stages.governance.critical_path import build_schedule_network
+
+    entities = load_all_entities(project_root)
+    milestones = entities.get("milestones", [])
+    tasks = entities.get("tasks", [])
+
+    network = build_schedule_network(tasks, milestones)
+    critical_chain_ids = {i.id for i in network.get_critical_chain()}
+
+    return {
+        "project_id": project_root.name,
+        "milestones": [
+            {
+                "id": m.get("id"),
+                "title": m.get("title"),
+                "phase": m.get("phase"),
+                "gate_ref": m.get("gate_ref"),
+                "owner": m.get("owner"),
+                "status": m.get("status"),
+                "baseline_start": m.get("baseline_start"),
+                "baseline_end": m.get("baseline_end"),
+                "forecast_start": m.get("forecast_start"),
+                "forecast_end": m.get("forecast_end"),
+                "actual_start": m.get("actual_start"),
+                "actual_end": m.get("actual_end"),
+                "schedule_variance_days": m.get("schedule_variance_days"),
+                "critical": m.get("id") in critical_chain_ids,
+                "blocking": m.get("blocking", False),
+                "depends_on": m.get("depends_on", []),
+                "task_refs": m.get("task_refs", []),
+            }
+            for m in sorted(milestones, key=lambda x: x.get("baseline_end", ""))
+        ],
+    }
+
+
+def task_summary(project_root: Path) -> dict:
+    """Task status summary with blocking relationships."""
+    from epe.stages.governance.registry_derive import load_all_entities
+    from epe.stages.governance.critical_path import build_schedule_network
+
+    entities = load_all_entities(project_root)
+    tasks = entities.get("tasks", [])
+    milestones = entities.get("milestones", [])
+
+    network = build_schedule_network(tasks, milestones)
+    critical_chain_ids = {i.id for i in network.get_critical_chain()}
+
+    return {
+        "project_id": project_root.name,
+        "tasks": [
+            {
+                "id": t.get("id"),
+                "title": t.get("title"),
+                "owner": t.get("owner"),
+                "status": t.get("status"),
+                "priority": t.get("priority"),
+                "milestone_ref": t.get("milestone_ref"),
+                "baseline_start": t.get("baseline_start"),
+                "baseline_end": t.get("baseline_end"),
+                "forecast_start": t.get("forecast_start"),
+                "forecast_end": t.get("forecast_end"),
+                "actual_start": t.get("actual_start"),
+                "actual_end": t.get("actual_end"),
+                "schedule_variance_days": t.get("schedule_variance_days"),
+                "critical": t.get("id") in critical_chain_ids,
+                "blocking_task": t.get("blocking_task", False),
+                "blocked_by": t.get("blocked_by", []),
+                "blocking": t.get("blocking", []),
+                "rfp_requirement_refs": t.get("rfp_requirement_refs", []),
+                "requirement_refs": t.get("requirement_refs", []),
+            }
+            for t in sorted(tasks, key=lambda x: x.get("baseline_end", ""))
+        ],
+    }
+
+
+def rfp_summary(project_root: Path) -> dict:
+    """RFP requirements status summary."""
+    from epe.stages.governance.registry_derive import load_all_entities
+
+    entities = load_all_entities(project_root)
+    rfp_reqs = entities.get("rfp_requirements", [])
+
+    return {
+        "project_id": project_root.name,
+        "rfp_requirements": [
+            {
+                "id": r.get("id"),
+                "title": r.get("title"),
+                "rfp_id": r.get("rfp_id"),
+                "mandatory": r.get("mandatory", True),
+                "priority": r.get("priority"),
+                "category": r.get("category"),
+                "owner": r.get("owner"),
+                "responsible": r.get("responsible"),
+                "status": r.get("status"),
+                "due_date": r.get("due_date"),
+                "contractual_date": r.get("contractual_date"),
+                "evidence_required": r.get("evidence_required", True),
+                "customer_refs": r.get("customer_refs", []),
+                "requirement_refs": r.get("requirement_refs", []),
+                "deliverable_refs": r.get("deliverable_refs", []),
+                "milestone_refs": r.get("milestone_refs", []),
+                "task_refs": r.get("task_refs", []),
+                "test_refs": r.get("test_refs", []),
+                "approval_refs": r.get("approval_refs", []),
+            }
+            for r in sorted(rfp_reqs, key=lambda x: x.get("due_date", ""))
+        ],
+    }
+
+
+def _parse_date(value: Any) -> date | None:
+    """Parse a date from string or date object."""
+    if value is None:
+        return None
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+    return None

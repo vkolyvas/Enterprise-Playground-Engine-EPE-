@@ -1,4 +1,35 @@
 contracts:
+  # Entity directories (authoritative data)
+  entities:
+    schema: schemas/entity.schema.yaml
+    dirs:
+      ms: entities/ms
+      task: entities/task
+      rfp-req: entities/rfp-req
+      del: entities/del
+      aprv: entities/aprv
+      stk: entities/stk
+
+  # Derived governance views
+  governance:
+    schema: schemas/governance.schema.yaml
+    paths:
+      milestone-register: governance/milestone-register.md
+      task-register: governance/task-register.md
+      rfp-obligations: governance/rfp-obligations.md
+      traceability-matrix: governance/traceability-matrix.md
+      governance-control: governance/governance.md
+
+  # Stage control documents (derived per stage)
+  product:
+    stage_control: product/product-control.md
+  presales:
+    stage_control: presales/presales-control.md
+  architecture:
+    stage_control: architecture/solution-manager-cockpit.md
+  delivery:
+    stage_control: delivery/delivery-control.md
+
   product:
     schema: schemas/product.schema.yaml
     paths:
