@@ -1,12 +1,13 @@
 ---
-checksum_sha256: a65cd14e5275c946ada34913fabc098d447dee7a27f09742ee490dc839c161c9
+checksum_sha256: 0dc716753d6edbd6328eacdadc939e4bdde9442d7f9f0c58d93ab153f96eb10c
 contract: product.readiness
 customer: Tele-MANAS
-generated_at: '2026-09-30T14:27:16.467775+00:00'
+generated_at: '2026-09-30T14:53:22.876996+00:00'
 generated_by: product-engine
 project_id: number2
 provenance:
-  source_documents: []
+  source_documents:
+  - DOC-B585FB4B498A
 stage: product
 status: draft
 version: 1
