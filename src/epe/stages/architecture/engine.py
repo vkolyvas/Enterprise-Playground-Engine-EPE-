@@ -7,6 +7,7 @@ from typing import Any
 
 from epe.core.frontmatter import read_doc
 from epe.stages.base import StageContext, StageEngine
+from epe.stages.entity_emitter import emit_entity_files
 from epe.stages.architecture.parser import parse_architecture_response
 from epe.stages.architecture.prompts import (
     ARCHITECTURE_SYSTEM,
@@ -17,7 +18,7 @@ from epe.stages.architecture.prompts import (
 class ArchitectureEngine(StageEngine):
     stage = "architecture"
     contract = "architecture"
-    outputs = ["validation", "hld", "security", "lld", "cost", "blueprint"]
+    outputs = ["validation", "hld", "security", "lld", "cost", "solution_baseline"]
 
     def preconditions(self) -> list[str]:
         return ["presales/handover"]
@@ -58,7 +59,7 @@ class ArchitectureEngine(StageEngine):
         findings: list[dict[str, Any]] = []
         hld = parsed.get("body_hld", "")
         lld = parsed.get("body_lld", "")
-        blueprint = parsed.get("body_blueprint", "")
+        solution_baseline = parsed.get("body_solution_baseline", "")
         if "COMP-" not in hld:
             findings.append(
                 {
@@ -77,22 +78,22 @@ class ArchitectureEngine(StageEngine):
                     "message": "HLD does not reference DEC-NNN decisions.",
                 }
             )
-        if "TASK-" not in blueprint:
+        if "TASK-" not in solution_baseline:
             findings.append(
                 {
                     "id": "F-ARCH-003",
                     "validator": "content",
                     "severity": "error",
-                    "message": "Blueprint has no TASK-NNN implementation tasks — Delivery cannot proceed.",
+                    "message": "Solution Baseline has no TASK-NNN implementation tasks — Delivery cannot proceed.",
                 }
             )
-        if "TEST-" not in blueprint:
+        if "TEST-" not in solution_baseline:
             findings.append(
                 {
                     "id": "F-ARCH-004",
                     "validator": "content",
                     "severity": "error",
-                    "message": "Blueprint has no TEST-NNN acceptance tests.",
+                    "message": "Solution Baseline has no TEST-NNN acceptance tests.",
                 }
             )
         if len(lld.strip()) < 200:
@@ -105,3 +106,33 @@ class ArchitectureEngine(StageEngine):
                 }
             )
         return findings
+
+    def post_process(
+        self, outputs: dict[str, Path], parsed: dict[str, Any]
+    ) -> dict[str, Path]:
+        """Emit per-entity files for REQ, COMP, DEC, TASK, TEST, RSK, ASM, DEP."""
+        entities_dir = self.ctx.paths.project_root / "entities"
+        meta = {
+            "project_id": self.ctx.project_id,
+            "stage": self.stage,
+        }
+        if self.ctx.opportunity:
+            meta["opportunity"] = self.ctx.opportunity
+        if self.ctx.customer:
+            meta["customer"] = self.ctx.customer
+
+        # Entity types to extract from each artifact
+        entity_types = ["REQ", "COMP", "DEC", "TASK", "TEST", "RSK", "ASM", "DEP"]
+
+        for art_name in ["hld", "lld", "solution_baseline"]:
+            body = parsed.get(f"body_{art_name}", "")
+            if not body:
+                continue
+            emit_entity_files(
+                artifact_body=body,
+                entity_types=entity_types,
+                output_dir=entities_dir,
+                source_artifact=f"architecture/{art_name}.md",
+                metadata=meta,
+            )
+        return {}

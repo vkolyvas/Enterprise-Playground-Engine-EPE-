@@ -8,7 +8,7 @@ Your job is to consume the Presales handover and produce six Markdown artifacts:
   3. architecture/security.md      — threat model, controls, identity, network, etc.
   4. architecture/lld.md           — per-component detailed design
   5. architecture/cost.md          — line items, assumptions, ranges, optimizations
-  6. architecture/blueprint.md     — implementation blueprint (handover to Delivery)
+  6. architecture/solution-baseline.md — solution baseline (handover to Delivery)
 
 You MUST:
 - Treat the Presales handover as authoritative for requirements.
@@ -20,13 +20,13 @@ You MUST:
   risks, vendor dependencies, operational gaps. List them in validation.md.
 - Output one JSON object with keys:
     "body_validation", "body_hld", "body_security", "body_lld",
-    "body_cost", "body_blueprint",
+    "body_cost", "body_solution_baseline",
     "metadata": {"provenance": {"source_documents": [...]}}
 Return ONLY the JSON object."""
 
 
 ARCHITECTURE_USER_TEMPLATE = """OUTPUT FORMAT: Return a single JSON object with these keys:
-{{"body_validation", "body_hld", "body_security", "body_lld", "body_cost", "body_blueprint", "metadata": {{"provenance": {{"source_documents": [...]}}}}}}
+{{"body_validation", "body_hld", "body_security", "body_lld", "body_cost", "body_solution_baseline", "metadata": {{"provenance": {{"source_documents": [...]}}}}}}
 Respond with ONLY the JSON object — no preamble, explanation, or markdown formatting around it.
 
 ---
@@ -59,11 +59,11 @@ Tasks (use the above evidence to produce each section):
    failure modes, runbook stubs).
 5. cost.md — line items, assumptions, ranges (low / expected / high),
    optimization opportunities.
-6. blueprint.md — implementation blueprint consumed by Delivery. Include:
+6. solution-baseline.md — solution baseline consumed by Delivery. Include:
    - Components (COMP-NNN)
    - Implementation tasks (TASK-NNN)
    - Test plan (TEST-NNN)
-   - Rollout strategy
    - Acceptance criteria
-   - Risks and mitigations
-   - Dependencies"""
+   - Risks (RSK-NNN) and mitigations
+   - Assumptions (ASM-NNN)
+   - Dependencies (DEP-NNN)"""

@@ -88,6 +88,17 @@ class StageEngine(ABC):
         """Optional post-validation. Return a list of finding dicts."""
         return []
 
+    def post_process(
+        self, outputs: dict[str, Path], parsed: dict[str, Any]
+    ) -> dict[str, Path]:
+        """Optional post-processing hook to emit per-entity files.
+
+        Subclasses can override this to extract entity IDs into individual
+        files. Return a dict mapping entity-type directory names to the
+        directories that were written (for audit purposes).
+        """
+        return {}
+
     # Standard pipeline ------------------------------------------------------
 
     def run(self, *, dry_run: bool = False) -> StageResult:
@@ -152,6 +163,9 @@ class StageEngine(ABC):
             )
             outputs[name] = out_path
 
+        # Post-processing hook for per-entity file emission
+        self.post_process(outputs, parsed)
+
         return StageResult(
             stage=self.stage,
             outputs=outputs,
@@ -178,7 +192,7 @@ class StageEngine(ABC):
             "security": self.ctx.paths.project_architecture / "security.md",
             "lld": self.ctx.paths.project_architecture / "lld.md",
             "cost": self.ctx.paths.project_architecture / "cost.md",
-            "blueprint": self.ctx.paths.project_architecture / "blueprint.md",
+            "solution_baseline": self.ctx.paths.project_architecture / "solution-baseline.md",
             "plan": self.ctx.paths.project_delivery / "plan.md",
             "test": self.ctx.paths.project_delivery / "test.md",
             "acceptance": self.ctx.paths.project_delivery / "acceptance.md",

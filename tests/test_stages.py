@@ -47,7 +47,7 @@ def test_presales_engine_requires_product(stage_ctx, paths) -> None:
 def test_architecture_engine_runs(stage_ctx, paths) -> None:
     paths.ensure_project_layout()
     result = run_stage("architecture", stage_ctx, dry_run=True)
-    for name in ("validation", "hld", "security", "lld", "cost", "blueprint"):
+    for name in ("validation", "hld", "security", "lld", "cost", "solution_baseline"):
         assert name in result.outputs
 
 

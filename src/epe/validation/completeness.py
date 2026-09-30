@@ -46,7 +46,7 @@ _MANDATORY_DOCUMENTS: dict[str, dict[str, str]] = {
         "security.md": "Security architecture",
         "lld.md": "Low-level design",
         "cost.md": "Cost and sizing",
-        "blueprint.md": "Architecture → Delivery blueprint",
+        "solution-baseline.md": "Architecture → Delivery solution baseline",
     },
     "delivery": {
         "plan.md": "Implementation plan",
@@ -75,7 +75,7 @@ _FILENAME_TO_CONTRACT: dict[str, str] = {
     "security": "architecture.security",
     "lld": "architecture.lld",
     "cost": "architecture.cost",
-    "blueprint": "architecture.blueprint",
+    "solution_baseline": "architecture.solution_baseline",
     "plan": "delivery.plan",
     "test": "delivery.test",
     "acceptance": "delivery.acceptance",

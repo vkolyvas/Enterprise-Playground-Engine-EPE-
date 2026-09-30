@@ -36,7 +36,7 @@ def parse_architecture_response(response: str) -> dict[str, Any]:
         "body_security": data.get("body_security", ""),
         "body_lld": data.get("body_lld", ""),
         "body_cost": data.get("body_cost", ""),
-        "body_blueprint": data.get("body_blueprint", ""),
+        "body_solution_baseline": data.get("body_solution_baseline", ""),
         "metadata": {
             "provenance": {
                 "source_documents": data.get("metadata", {}).get("provenance", {}).get(
@@ -54,6 +54,6 @@ def _scaffold() -> dict[str, Any]:
         "body_security": "# Security\n\n## Threat model\n## Controls\n## Identity\n## Data protection\n## Network\n## Logging\n## Audit\n## Compliance\n",
         "body_lld": "# LLD\n\n## Component design\n## Interfaces\n## Data models\n## Configurations\n## Failure modes\n## Runbook stubs\n",
         "body_cost": "# Cost\n\n## Line items\n## Assumptions\n## Ranges\n## Optimization opportunities\n",
-        "body_blueprint": "# Implementation Blueprint\n\n## Components\n## Implementation tasks\n## Test plan\n## Rollout strategy\n## Acceptance criteria\n## Risks and mitigations\n## Dependencies\n",
+        "body_solution_baseline": "# Solution Baseline\n\n## Scope Reference\n## Solution Components (COMP-NNN)\n## Implementation Tasks (TASK-NNN)\n## Test Plan (TEST-NNN)\n## Acceptance Criteria\n## Risks (RSK-NNN)\n## Assumptions (ASM-NNN)\n## Dependencies (DEP-NNN)\n",
         "metadata": {"provenance": {"source_documents": []}},
     }

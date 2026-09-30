@@ -3,29 +3,26 @@
 from __future__ import annotations
 
 import json
-import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
 from epe.core.frontmatter import read_doc
+from epe.tracking.ids import ID_PATTERNS, scan_ids
 from epe.validation.engine import Finding, make_finding
 
 
-_REQ_RE = re.compile(r"\bREQ-\d+\b")
-_CAP_RE = re.compile(r"\bCAP-\d+\b")
-_DEC_RE = re.compile(r"\bDEC-\d+\b")
-_TASK_RE = re.compile(r"\bTASK-\d+\b")
-_TEST_RE = re.compile(r"\bTEST-\d+\b")
-_COMP_RE = re.compile(r"\bCOMP-\d+\b")
-
-
-def _scan_ids(text: str, pat: re.Pattern) -> set[str]:
-    return set(pat.findall(text))
-
-
 def build_traceability_graph(project_root: Path) -> dict[str, Any]:
-    """Walk the project tree and compute a traceability projection."""
+    """Walk the project tree and compute a traceability projection.
+
+    Implements the unified traceability spine:
+        CUST → REQ → COMP → DEC → TEST → EVD → ACCEPTANCE → AS-BUILT
+
+    And cross-cutting relationships:
+        REQ ── affected_by ── ASM
+        REQ ── blocked_by ─── DEP
+        REQ ── changed_by ─── CHG
+    """
     nodes: dict[str, dict[str, Any]] = {}
     edges: list[dict[str, Any]] = []
 
@@ -34,64 +31,118 @@ def build_traceability_graph(project_root: Path) -> dict[str, Any]:
             nodes[node_id] = {"stage": stage, "path": str(path.relative_to(project_root)), **extra}
 
     def add_edge(a: str, b: str, kind: str) -> None:
+        """Add edge only if both endpoints exist in nodes."""
         if a in nodes and b in nodes:
             edges.append({"from": a, "to": b, "type": kind})
 
-    # Scan presales/scope.md and presales/handover.md for REQ-NNN declarations
+    # === PRODUCT STAGE: CAP (Capabilities) ===
+    catalog_path = project_root / "product" / "catalog.md"
+    if catalog_path.exists():
+        body = read_doc(catalog_path).body
+        for cap in scan_ids(body, "CAP"):
+            add_node(cap, "product", catalog_path)
+
+    # === PRESALES STAGE: CUST + REQ + CAP relationships ===
     presales_scope = project_root / "presales" / "scope.md"
     presales_handover = project_root / "presales" / "handover.md"
-    catalog_path = project_root / "product" / "catalog.md"
-
-    if catalog_path.exists():
-        for m in _CAP_RE.finditer(read_doc(catalog_path).body):
-            add_node(f"CAP-{_idnum(m.group(0))}", "product", catalog_path)
 
     for path in (presales_scope, presales_handover):
         if not path.exists():
             continue
         body = read_doc(path).body
-        for req in _scan_ids(body, _REQ_RE):
+
+        # CUST nodes + refines edge to REQ
+        for cust in scan_ids(body, "CUST"):
+            add_node(cust, "presales", path)
+            for req in scan_ids(body, "REQ"):
+                add_node(req, "presales", path)
+                add_edge(cust, req, "refines")
+
+        # REQ nodes + supports edge from CAP
+        for req in scan_ids(body, "REQ"):
             add_node(req, "presales", path)
-            for cap in _scan_ids(body, _CAP_RE):
+            for cap in scan_ids(body, "CAP"):
                 add_node(cap, "product", catalog_path if catalog_path.exists() else path)
                 add_edge(cap, req, "supports")
 
-    # Architecture stage: HLD/LLD/blueprint reference REQ, COMP, DEC, TASK, TEST
-    for art in ("architecture/hld.md", "architecture/lld.md", "architecture/blueprint.md"):
+        # ASM (Assumptions) - affected_by edge to REQ
+        for asm in scan_ids(body, "ASM"):
+            add_node(asm, "presales", path)
+            for req in scan_ids(body, "REQ"):
+                add_edge(req, asm, "affected_by")
+
+        # DEP (Dependencies) - blocked_by edge to REQ
+        for dep in scan_ids(body, "DEP"):
+            add_node(dep, "presales", path)
+            for req in scan_ids(body, "REQ"):
+                add_edge(req, dep, "blocked_by")
+
+        # CHG (Changes) - changed_by edge to REQ
+        for chg in scan_ids(body, "CHG"):
+            add_node(chg, "presales", path)
+            for req in scan_ids(body, "REQ"):
+                add_edge(req, chg, "changed_by")
+
+    # === ARCHITECTURE STAGE: HLD/LLD/solution_baseline ===
+    for art in ("architecture/hld.md", "architecture/lld.md", "architecture/solution-baseline.md"):
         p = project_root / art
         if not p.exists():
             continue
         body = read_doc(p).body
-        for comp in _scan_ids(body, _COMP_RE):
+
+        # COMP nodes + satisfied_by edge from REQ
+        for comp in scan_ids(body, "COMP"):
             add_node(comp, "architecture", p)
-            for req in _scan_ids(body, _REQ_RE):
-                add_edge(comp, req, "implements")
-        for dec in _scan_ids(body, _DEC_RE):
+            for req in scan_ids(body, "REQ"):
+                add_edge(comp, req, "satisfied_by")
+
+        # DEC nodes + decided_by edge from COMP
+        for dec in scan_ids(body, "DEC"):
             add_node(dec, "architecture", p)
-            for req in _scan_ids(body, _REQ_RE):
-                add_edge(dec, req, "decides_on")
-        for task in _scan_ids(body, _TASK_RE):
+            for comp in scan_ids(body, "COMP"):
+                add_edge(comp, dec, "decided_by")
+
+        # TASK nodes (delivery planning)
+        for task in scan_ids(body, "TASK"):
             add_node(task, "delivery", p)
-        for test in _scan_ids(body, _TEST_RE):
-            add_node(test, "delivery", p)
-            for req in _scan_ids(body, _REQ_RE):
+            # TASK implements COMP
+            for comp in scan_ids(body, "COMP"):
+                add_edge(task, comp, "implements")
+
+        # TEST nodes + validated_by edge from DEC
+        for test in scan_ids(body, "TEST"):
+            add_node(test, "architecture", p)
+            for dec in scan_ids(body, "DEC"):
+                add_edge(dec, test, "validated_by")
+            # TEST verifies REQ
+            for req in scan_ids(body, "REQ"):
                 add_edge(test, req, "verifies")
 
-    # Delivery: plan and test reference TASK/TEST
+    # === DELIVERY STAGE: plan/test/acceptance ===
     for art in ("delivery/plan.md", "delivery/test.md", "delivery/acceptance.md"):
         p = project_root / art
         if not p.exists():
             continue
         body = read_doc(p).body
-        for task in _scan_ids(body, _TASK_RE):
+
+        # TASK nodes + verified_by edge from TEST
+        for task in scan_ids(body, "TASK"):
             add_node(task, "delivery", p)
-            for test in _scan_ids(body, _TEST_RE):
+            for test in scan_ids(body, "TEST"):
                 add_node(test, "delivery", p)
                 add_edge(task, test, "verified_by")
-        for test in _scan_ids(body, _TEST_RE):
+
+        # TEST nodes + verifies REQ
+        for test in scan_ids(body, "TEST"):
             add_node(test, "delivery", p)
-            for req in _scan_ids(body, _REQ_RE):
+            for req in scan_ids(body, "REQ"):
                 add_edge(test, req, "verifies")
+
+        # EVD (Evidence) nodes + verified_by edge from TEST
+        for evd in scan_ids(body, "EVD"):
+            add_node(evd, "delivery", p)
+            for test in scan_ids(body, "TEST"):
+                add_edge(test, evd, "verified_by")
 
     # Orphan analysis
     referenced = {e["from"] for e in edges} | {e["to"] for e in edges}
@@ -102,11 +153,6 @@ def build_traceability_graph(project_root: Path) -> dict[str, Any]:
         "edges": edges,
         "orphan": orphan,
     }
-
-
-def _idnum(s: str) -> str:
-    m = re.search(r"\d+", s)
-    return m.group(0) if m else s
 
 
 def write_traceability(graph: dict[str, Any], project_root: Path) -> Path:
@@ -127,13 +173,13 @@ def validate_traceability(artifact_path: Path, context: dict[str, Any]) -> Itera
     contract = doc.metadata.get("contract", "")
 
     # If this artifact declares REQ-NNNs, every one must trace forward
-    reqs = _scan_ids(body, _REQ_RE)
+    reqs = scan_ids(body, "REQ")
     if reqs and contract.startswith("presales"):
         for req in sorted(reqs):
             implemented = any(
                 e["from"] == req or e["to"] == req
                 for e in graph["edges"]
-                if e["type"] in ("implements", "verifies")
+                if e["type"] in ("satisfied_by", "verified_by")
             )
             if not implemented:
                 yield make_finding(
@@ -145,7 +191,7 @@ def validate_traceability(artifact_path: Path, context: dict[str, Any]) -> Itera
                 )
 
     # If this artifact declares COMP-NNNs, every one must trace upstream
-    comps = _scan_ids(body, _COMP_RE)
+    comps = scan_ids(body, "COMP")
     if comps and contract.startswith("architecture"):
         for comp in sorted(comps):
             upstream = any(e["to"] == comp for e in graph["edges"])
@@ -159,7 +205,7 @@ def validate_traceability(artifact_path: Path, context: dict[str, Any]) -> Itera
                 )
 
     # If this artifact declares TASK-NNNs, every one should trace back to a COMP
-    tasks = _scan_ids(body, _TASK_RE)
+    tasks = scan_ids(body, "TASK")
     if tasks and contract.startswith("delivery"):
         for task in sorted(tasks):
             if not any(e["from"] == task or e["to"] == task for e in graph["edges"]):
@@ -169,4 +215,21 @@ def validate_traceability(artifact_path: Path, context: dict[str, Any]) -> Itera
                     location=f"{artifact_path}#{task}",
                     message=f"Task {task} has no upstream component or test reference.",
                     kind="orphan_task",
+                )
+
+    # If this artifact declares TEST-NNNs, they should have EVD evidence
+    tests = scan_ids(body, "TEST")
+    if tests and contract.startswith("delivery"):
+        for test in sorted(tests):
+            has_evidence = any(
+                e["from"] == test and e["type"] == "verified_by"
+                for e in graph["edges"]
+            )
+            if not has_evidence:
+                yield make_finding(
+                    validator="traceability",
+                    severity="warning",
+                    location=f"{artifact_path}#{test}",
+                    message=f"Test {test} has no evidence (EVD) record.",
+                    kind="missing_evidence",
                 )

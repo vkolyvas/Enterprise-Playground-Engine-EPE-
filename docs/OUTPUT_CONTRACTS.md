@@ -263,31 +263,29 @@ version: 1
 
 Required: line items, assumptions, ranges, optimization opportunities.
 
-### 3.6 `architecture/blueprint.md`  ← Architecture → Delivery contract
+### 3.6 `architecture/solution-baseline.md`  ← Architecture → Delivery contract
 
 ```yaml
 ---
-contract: architecture.blueprint
+contract: architecture.solution_baseline
 version: 1
 opportunity: OPP-00124
 stage: architecture
-status: approved              # gate architecture.blueprint
+status: approved              # gate architecture.solution_baseline
 approved_by: <human>
 approved_at: 2026-09-29T10:00:00Z
 ---
 
-# Implementation Blueprint
+# Solution Baseline
 
 ## Scope Reference (presales/handover.md)
-## Components (with COMP-NNN)
+## Solution Components (COMP-NNN)
 ## Implementation Tasks (TASK-NNN)
-## Environment Plan
-## Configuration Plan
 ## Test Plan (TEST-NNN)
-## Rollout Strategy
 ## Acceptance Criteria
-## Risks and Mitigations
-## Dependencies
+## Risks (RSK-NNN)
+## Assumptions (ASM-NNN)
+## Dependencies (DEP-NNN)
 
 ## Handover
 - This artifact is the contract consumed by `delivery`.

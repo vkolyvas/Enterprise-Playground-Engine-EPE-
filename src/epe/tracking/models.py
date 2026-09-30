@@ -88,12 +88,19 @@ class DocumentRecord:
     # Traceability links
     inputs: list[str] = field(default_factory=list)   # upstream doc IDs / filenames
     outputs: list[str] = field(default_factory=list)   # downstream doc IDs / filenames
+    # Core lifecycle spine entities
     requirements: list[str] = field(default_factory=list)   # REQ-NNN
-    risks: list[str] = field(default_factory=list)          # RSK-NNN
-    decisions: list[str] = field(default_factory=list)       # DEC-NNN
+    customer_requirements: list[str] = field(default_factory=list)  # CUST-NNN
     components: list[str] = field(default_factory=list)      # COMP-NNN
+    decisions: list[str] = field(default_factory=list)       # DEC-NNN
     tasks: list[str] = field(default_factory=list)           # TASK-NNN
     tests: list[str] = field(default_factory=list)           # TEST-NNN
+    evidence: list[str] = field(default_factory=list)         # EVD-NNN
+    # Supporting/cross-cutting entities
+    risks: list[str] = field(default_factory=list)          # RSK-NNN
+    assumptions: list[str] = field(default_factory=list)    # ASM-NNN
+    dependencies: list[str] = field(default_factory=list)   # DEP-NNN
+    changes: list[str] = field(default_factory=list)        # CHG-NNN
 
     # Versioning
     supersedes: str | None = None            # filename of older version
@@ -137,12 +144,19 @@ class DocumentRecord:
             "customer": self.customer,
             "inputs": self.inputs,
             "outputs": self.outputs,
+            # Core lifecycle spine
             "requirements": self.requirements,
-            "risks": self.risks,
-            "decisions": self.decisions,
+            "customer_requirements": self.customer_requirements,
             "components": self.components,
+            "decisions": self.decisions,
             "tasks": self.tasks,
             "tests": self.tests,
+            "evidence": self.evidence,
+            # Supporting/cross-cutting
+            "risks": self.risks,
+            "assumptions": self.assumptions,
+            "dependencies": self.dependencies,
+            "changes": self.changes,
             "supersedes": self.supersedes,
             "superseded_by": self.superseded_by,
         }
@@ -276,20 +290,34 @@ class LineageEntry:
     from_doc: str
     to_doc: str
     link_type: str
-    requirement_id: str | None = None
-    component_id: str | None = None
-    task_id: str | None = None
-    test_id: str | None = None
-    evidence_id: str | None = None
+    # Spine entities
+    customer_requirement_id: str | None = None  # CUST-NNN
+    requirement_id: str | None = None           # REQ-NNN
+    component_id: str | None = None            # COMP-NNN
+    decision_id: str | None = None             # DEC-NNN
+    task_id: str | None = None                 # TASK-NNN
+    test_id: str | None = None                # TEST-NNN
+    evidence_id: str | None = None             # EVD-NNN
+    # Cross-cutting entities
+    assumption_id: str | None = None          # ASM-NNN
+    dependency_id: str | None = None           # DEP-NNN
+    change_id: str | None = None              # CHG-NNN
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "from": self.from_doc,
             "to": self.to_doc,
             "link_type": self.link_type,
+            # Spine
+            "customer_requirement_id": self.customer_requirement_id,
             "requirement_id": self.requirement_id,
             "component_id": self.component_id,
+            "decision_id": self.decision_id,
             "task_id": self.task_id,
             "test_id": self.test_id,
             "evidence_id": self.evidence_id,
+            # Cross-cutting
+            "assumption_id": self.assumption_id,
+            "dependency_id": self.dependency_id,
+            "change_id": self.change_id,
         }

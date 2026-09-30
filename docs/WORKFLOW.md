@@ -145,7 +145,7 @@ The state machine permits:
 The state machine does **not** permit:
 
 - Architecture to begin before Presales handover is approved.
-- Delivery to begin before Architecture blueprint is approved.
+- Delivery to begin before Architecture solution baseline is approved.
 
 ## 7. Feedback Loop
 

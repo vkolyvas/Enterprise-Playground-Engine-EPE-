@@ -144,7 +144,7 @@ stages:
       - architecture/security
       - architecture/lld
       - architecture/cost
-      - architecture/blueprint
+      - architecture/solution_baseline
     gates:
       - gate.architecture.requirements
       - gate.architecture.hld
@@ -160,7 +160,7 @@ stages:
       - architecture
       - delivery
     inputs:
-      - architecture/blueprint
+      - architecture/solution_baseline
       - architecture/lld
       - sources/processed
       - knowledge/delivery
@@ -270,7 +270,7 @@ contracts:
       security: architecture/security.md
       lld: architecture/lld.md
       cost: architecture/cost.md
-      blueprint: architecture/blueprint.md
+      solution_baseline: architecture/solution-baseline.md
   delivery:
     schema: schemas/delivery.schema.yaml
     paths:

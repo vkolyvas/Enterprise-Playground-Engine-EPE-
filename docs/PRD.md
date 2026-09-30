@@ -43,7 +43,7 @@ EPE unifies the four stages through:
 |---------------|------------------------------------------------------|
 | Product Mgmt  | Product engine, readiness review, roadmap feedback    |
 | Presales      | Discovery, qualification, scoping, SOW, handover     |
-| Architecture  | Requirements validation, HLD/LLD, blueprint review   |
+| Architecture  | Requirements validation, HLD/LLD, solution baseline review   |
 | Delivery      | Deployment, validation, operations, optimization     |
 | Program Mgmt  | Lifecycle dashboard, gate approvals, traceability    |
 

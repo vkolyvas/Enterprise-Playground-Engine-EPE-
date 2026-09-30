@@ -7,12 +7,12 @@ DocumentRecord objects with enhanced traceability metadata.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 from typing import Any
 
 from epe.core.frontmatter import read_doc
 from epe.core.logging import get_logger
+from epe.tracking.ids import ID_PATTERNS, scan_all_ids
 from epe.tracking.models import (
     DocumentRecord,
     DocumentStatus,
@@ -22,20 +22,6 @@ from epe.tracking.models import (
 )
 
 logger = get_logger("tracking.registry")
-
-# Regex patterns for extracting typed IDs from document body text
-_ID_PATTERNS = {
-    "REQ": re.compile(r"\bREQ-\d+\b"),
-    "DEC": re.compile(r"\bDEC-\d+\b"),
-    "RSK": re.compile(r"\bRSK-\d+\b"),
-    "CAP": re.compile(r"\bCAP-\d+\b"),
-    "COMP": re.compile(r"\bCOMP-\d+\b"),
-    "TASK": re.compile(r"\bTASK-\d+\b"),
-    "TEST": re.compile(r"\bTEST-\d+\b"),
-    "Q": re.compile(r"\bQ-\d+\b"),
-    "CUST": re.compile(r"\bCUST-\d+\b"),
-    "EVD": re.compile(r"\bEVD-\d+\b"),
-}
 
 
 def _parse_status(value: str | None) -> DocumentStatus:
@@ -57,13 +43,8 @@ def _parse_doc_type(value: str | None) -> DocumentType:
 
 
 def _extract_ids(body: str) -> dict[str, list[str]]:
-    """Extract all typed IDs from document body text."""
-    result: dict[str, list[str]] = {}
-    for kind, pattern in _ID_PATTERNS.items():
-        ids = pattern.findall(body)
-        if ids:
-            result[kind] = sorted(set(ids))
-    return result
+    """Extract all typed IDs from document body text using canonical patterns."""
+    return scan_all_ids(body)
 
 
 def _stage_from_path(path: Path) -> str | None:
@@ -132,8 +113,9 @@ class DocumentRegistry:
             for md_file in stage_path.glob("*.md"):
                 self._register(md_file, project_root)
 
-        # Also scan requirements/, decisions/, risks/ for standalone entity docs
-        for subdir in ["requirements", "decisions", "risks", "questions"]:
+        # Also scan entity subdirectories for standalone entity docs
+        for subdir in ["requirements", "decisions", "risks", "questions",
+                       "assumptions", "dependencies", "changes", "evidence"]:
             subdir_path = project_root / subdir
             if not subdir_path.is_dir():
                 continue
@@ -175,12 +157,19 @@ class DocumentRegistry:
             customer=doc.get("customer"),
             inputs=_normalize_inputs_outputs(doc.get("inputs")),
             outputs=_normalize_inputs_outputs(doc.get("outputs")),
-            requirements=body_ids.get("REQ", []) + body_ids.get("CUST", []),
-            risks=body_ids.get("RSK", []),
-            decisions=body_ids.get("DEC", []),
+            # Core lifecycle spine
+            requirements=body_ids.get("REQ", []),
+            customer_requirements=body_ids.get("CUST", []),
             components=body_ids.get("COMP", []),
+            decisions=body_ids.get("DEC", []),
             tasks=body_ids.get("TASK", []),
             tests=body_ids.get("TEST", []),
+            evidence=body_ids.get("EVD", []),
+            # Supporting/cross-cutting
+            risks=body_ids.get("RSK", []),
+            assumptions=body_ids.get("ASM", []),
+            dependencies=body_ids.get("DEP", []),
+            changes=body_ids.get("CHG", []),
             supersedes=doc.get("supersedes"),
             superseded_by=doc.get("superseded_by"),
         )

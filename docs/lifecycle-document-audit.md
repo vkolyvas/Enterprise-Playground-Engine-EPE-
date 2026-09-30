@@ -11,7 +11,7 @@
 |-------|-----------|-----------------|
 | Product | `lifecycle.py:State`, `stages/product/` | `definition.md`, `catalog.md`, `guardrails.md`, `readiness.md` |
 | Presales | `lifecycle.py:State`, `stages/presales/` | `discovery.md`, `qualification.md`, `scope.md`, `sow.md`, `handover.md` |
-| Architecture | `lifecycle.py:State`, `stages/architecture/` | `validation.md`, `hld.md`, `security.md`, `lld.md`, `cost.md`, `blueprint.md` |
+| Architecture | `lifecycle.py:State`, `stages/architecture/` | `validation.md`, `hld.md`, `security.md`, `lld.md`, `cost.md`, `solution-baseline.md` |
 | Delivery | `lifecycle.py:State`, `stages/delivery/` | `plan.md`, `test.md`, `acceptance.md`, `onboarding.md`, `operations.md`, `handover.md`, `feedback.md` |
 
 **Observation:** The four canonical stages exist and are wired into the state machine. All 22 artifact types are already being produced by the stage engines.
@@ -93,10 +93,10 @@ The 18 architecture documents map to existing artifacts:
 - `availability-dr-dr.md` → `security.md`
 - `capacity-sizing.md` → `cost.md`
 - `bill-of-materials.md` → `cost.md`
-- `implementation-plan.md` → `blueprint.md`
-- `migration-plan.md` → `blueprint.md`
-- `test-strategy.md` → `blueprint.md`
-- `rollback-strategy.md` → `blueprint.md`
+- `implementation-plan.md` → `solution-baseline.md`
+- `migration-plan.md` → `solution-baseline.md`
+- `test-strategy.md` → `solution-baseline.md`
+- `rollback-strategy.md` → `solution-baseline.md`
 - `risks-assumptions-dependencies.md` → `validation.md`
 - `architecture-decisions.md` → `validation.md`
 

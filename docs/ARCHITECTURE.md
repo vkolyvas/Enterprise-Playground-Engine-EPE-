@@ -110,7 +110,7 @@ interoperability layer is the Markdown file with structured frontmatter.
 |------------------------|--------------------------------------------|
 | Product → Presales     | `product/readiness.md`                     |
 | Presales → Architecture| `presales/handover.md`                     |
-| Architecture → Delivery| `architecture/implementation-blueprint.md` |
+| Architecture → Delivery| `architecture/solution-baseline.md` |
 | Delivery → Product     | `delivery/feedback.md`                     |
 
 See `docs/OUTPUT_CONTRACTS.md`.

@@ -33,7 +33,7 @@ class HandoverRecord:
 HANDOVER_ARTIFACTS: dict[tuple[str, str], str] = {
     ("product", "presales"): "product/readiness.md",
     ("presales", "architecture"): "presales/handover.md",
-    ("architecture", "delivery"): "architecture/blueprint.md",
+    ("architecture", "delivery"): "architecture/solution-baseline.md",
     ("delivery", "product"): "delivery/feedback.md",
 }
 
@@ -47,7 +47,7 @@ def required_artifacts_for_transition(stage: str) -> list[str]:
                      "presales/scope.md", "presales/sow.md", "presales/handover.md"],
         "architecture": ["architecture/validation.md", "architecture/hld.md",
                          "architecture/security.md", "architecture/lld.md",
-                         "architecture/cost.md", "architecture/blueprint.md"],
+                         "architecture/cost.md", "architecture/solution-baseline.md"],
         "delivery": ["delivery/plan.md", "delivery/test.md", "delivery/acceptance.md",
                      "delivery/onboarding.md", "delivery/operations.md",
                      "delivery/handover.md", "delivery/feedback.md"],

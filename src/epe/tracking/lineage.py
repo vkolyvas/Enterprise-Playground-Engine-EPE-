@@ -84,6 +84,29 @@ class LineageComputer:
 
         return chain
 
+    def trace_from_customer_requirement(self, cust_id: str) -> LineageChain:
+        """Trace a customer requirement forward to solution requirements.
+
+        CUST-NNN (Presales)
+            → REQ-NNN (Presales scope or Architecture validation)
+            → COMP-NNN (Architecture HLD/LLD)
+            → TASK-NNN (Delivery plan)
+            → TEST-NNN (Delivery test)
+        """
+        chain = LineageChain()
+        visited: set[str] = set()
+
+        # Find documents that define this customer requirement
+        source_docs = [
+            d for d in self.registry.documents
+            if cust_id in d.customer_requirements
+        ]
+
+        for doc in source_docs:
+            self._trace_from_doc(doc.doc_id, chain, visited, cust_id=cust_id)
+
+        return chain
+
     def trace_from_document(self, doc_id: str) -> LineageChain:
         """Trace a document forward to all downstream documents."""
         chain = LineageChain()
@@ -98,6 +121,7 @@ class LineageComputer:
         visited: set[str],
         *,
         req_id: str | None = None,
+        cust_id: str | None = None,
     ) -> None:
         """Recursively trace from a document to its outputs."""
         if doc_id in visited:
@@ -115,15 +139,16 @@ class LineageComputer:
                 from_doc=doc_id,
                 to_doc=out_doc.doc_id,
                 link_type="traces_to",
+                customer_requirement_id=cust_id,
                 requirement_id=req_id,
                 component_id=next((c for c in out_doc.components), None),
                 task_id=next((t for t in out_doc.tasks), None),
                 test_id=next((t for t in out_doc.tests), None),
             )
             chain.add(entry)
-            self._trace_from_doc(out_doc.doc_id, chain, visited, req_id=req_id)
+            self._trace_from_doc(out_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id)
 
-        # Also trace through TASK/TEST/COMP embedded in this doc's body
+        # Also trace through COMP embedded in this doc's body
         for comp_id in doc.components:
             comp_docs = [d for d in self.registry.documents if comp_id in d.components]
             for comp_doc in comp_docs:
@@ -135,7 +160,7 @@ class LineageComputer:
                         component_id=comp_id,
                     )
                     chain.add(entry)
-                    self._trace_from_doc(comp_doc.doc_id, chain, visited, req_id=req_id)
+                    self._trace_from_doc(comp_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id)
 
         for task_id in doc.tasks:
             task_docs = [d for d in self.registry.documents if task_id in d.tasks]
@@ -148,7 +173,7 @@ class LineageComputer:
                         task_id=task_id,
                     )
                     chain.add(entry)
-                    self._trace_from_doc(task_doc.doc_id, chain, visited, req_id=req_id)
+                    self._trace_from_doc(task_doc.doc_id, chain, visited, req_id=req_id, cust_id=cust_id)
 
     # -------------------------------------------------------------------------
     # Backward trace: from a document to its upstream sources
@@ -210,14 +235,35 @@ class LineageComputer:
         """Build the complete traceability matrix for a project.
 
         Returns a dict keyed by requirement ID, with all downstream
-        components, decisions, tasks, and tests.
+        components, decisions, tasks, tests, and evidence.
         """
         matrix: dict[str, dict[str, Any]] = {}
 
         # Find all requirements across all documents
         all_reqs: set[str] = set()
+        all_custs: set[str] = set()
         for doc in self.registry.documents:
             all_reqs.update(doc.requirements)
+            all_custs.update(doc.customer_requirements)
+
+        for cust_id in sorted(all_custs):
+            chain = self.trace_from_customer_requirement(cust_id)
+            matrix[f"cust:{cust_id}"] = {
+                "customer_requirement": cust_id,
+                "chain": chain.to_dict(),
+                "requirements": list({
+                    e.requirement_id for e in chain.entries if e.requirement_id
+                }),
+                "components": list({
+                    e.component_id for e in chain.entries if e.component_id
+                }),
+                "decisions": list({
+                    e.decision_id for e in chain.entries if e.decision_id
+                }),
+                "tasks": list({e.task_id for e in chain.entries if e.task_id}),
+                "tests": list({e.test_id for e in chain.entries if e.test_id}),
+                "evidence": list({e.evidence_id for e in chain.entries if e.evidence_id}),
+            }
 
         for req_id in sorted(all_reqs):
             chain = self.trace_from_requirement(req_id)
@@ -228,7 +274,7 @@ class LineageComputer:
                     e.component_id for e in chain.entries if e.component_id
                 }),
                 "decisions": list({
-                    e.requirement_id for e in chain.entries  # DEC stored as requirement_id here
+                    e.decision_id for e in chain.entries if e.decision_id
                 }),
                 "tasks": list({e.task_id for e in chain.entries if e.task_id}),
                 "tests": list({e.test_id for e in chain.entries if e.test_id}),
@@ -285,7 +331,7 @@ class LineageComputer:
         """Return the canonical handoff document name for each stage."""
         mapping = {
             "presales": "presales/handover.md",
-            "architecture": "architecture/blueprint.md",
+            "architecture": "architecture/solution-baseline.md",
             "delivery": "delivery/handover.md",
         }
         return mapping.get(stage, f"{stage}/handover.md")
