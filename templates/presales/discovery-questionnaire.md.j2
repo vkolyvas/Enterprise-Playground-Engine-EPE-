@@ -1,0 +1,209 @@
+---
+contract: presales.discovery
+version: 1
+stage: presales
+type: instance
+status: draft
+owner: {{ owner | default('presales-engineering') }}
+opportunity: {{ opportunity | default('OPP-00000') }}
+customer: {{ customer | default('[Customer Name]') }}
+inputs: []
+outputs:
+  - presales/scope.md
+requirements: []
+risks: []
+decisions: []
+created: {{ created_date | default('YYYY-MM-DD') }}
+---
+
+# Technical Discovery Questionnaire
+
+## Document Metadata
+
+| Field | Value |
+|-------|-------|
+| Opportunity | {{ opportunity | default('OPP-00000') }} |
+| Customer | {{ customer | default('[Customer Name]') }} |
+| Date | {{ created_date | default('YYYY-MM-DD') }} |
+| Owner | {{ owner | default('presales-engineering') }} |
+
+---
+
+## 1. Business Context
+
+### 1.1 Stakeholders
+
+| Name | Role | Contact | Influence |
+|------|------|---------|-----------|
+| | | | |
+
+### 1.2 Business Objectives
+
+What is the primary business problem or opportunity this engagement addresses?
+
+> **Answer:**
+
+### 1.3 Current State
+
+Describe the customer's current environment, process, or system:
+
+> **Answer:**
+
+### 1.4 Drivers for Change
+
+What is motivating this initiative now?
+
+> **Answer:**
+
+### 1.5 Timeline
+
+| Milestone | Target Date |
+|-----------|-------------|
+| Decision date | |
+| Implementation start | |
+| Go-live | |
+
+### 1.6 Success Criteria
+
+How will the customer measure success?
+
+| # | Criterion | Target | Measurable? |
+|---|-----------|--------|-------------|
+| SC-001 | | | Yes/No |
+| SC-002 | | | Yes/No |
+| SC-003 | | | Yes/No |
+
+---
+
+## 2. Technical Environment
+
+### 2.1 Current Infrastructure
+
+| Category | Current State |
+|----------|--------------|
+| Cloud | |
+| On-premise | |
+| Hybrid | |
+| Network | |
+
+### 2.2 Applications
+
+| Application | Version | Critical? | Integration Points |
+|-------------|---------|-----------|-------------------|
+| | | | |
+
+### 2.3 Identity & Access Management
+
+| Item | Details |
+|------|---------|
+| IdP | |
+| SSO required? | |
+| MFA required? | |
+| User directory | |
+
+### 2.4 Data & Storage
+
+| Requirement | Details |
+|-------------|---------|
+| Data volume | |
+| Retention period | |
+| Residency constraints | |
+| Backup requirements | |
+
+### 2.5 Security
+
+| Requirement | Required? | Details |
+|-------------|-----------|---------|
+| Encryption at rest | | |
+| Encryption in transit | | |
+| SOC2 | | |
+| ISO27001 | | |
+| GDPR | | |
+| HIPAA | | |
+| Other compliance | | |
+
+### 2.6 Network & Integration
+
+| Item | Details |
+|------|---------|
+| Public endpoints | |
+| VPN required? | |
+| Firewall rules | |
+| API requirements | |
+
+---
+
+## 3. Non-Functional Requirements
+
+### 3.1 Availability & DR
+
+| Requirement | Target | Current? |
+|-------------|--------|---------|
+| Uptime SLA | | |
+| RTO | | |
+| RPO | | |
+| DR site | | |
+
+### 3.2 Performance
+
+| Metric | Target |
+|--------|--------|
+| Response time | |
+| Throughput | |
+| Concurrency | |
+
+### 3.3 Scalability
+
+> **Describe expected growth and scaling requirements:**
+
+---
+
+## 4. Constraints
+
+### 4.1 Technical Constraints
+
+> **List any technical limitations or boundaries:**
+
+### 4.2 Commercial Constraints
+
+| Constraint | Details |
+|------------|---------|
+| Budget | |
+| Pricing model | |
+| Minimum commitment | |
+| Maximum scope | |
+
+### 4.3 Vendor Lock-in
+
+> **What level of vendor lock-in is acceptable?**
+
+---
+
+## 5. Open Questions
+
+| # | Question | Blocking? | Owner | Due Date |
+|---|----------|-----------|-------|----------|
+| Q-001 | | Yes/No | | |
+| Q-002 | | Yes/No | | |
+
+---
+
+## 6. Evidence
+
+| Source | Document ID | Relevant Pages/Sections |
+|--------|-------------|------------------------|
+| | DOC-00000 | |
+| | DOC-00000 | |
+
+---
+
+## Traceability
+
+This document captures customer requirements that feed into:
+- `presales/scope.md` — scoped requirements and fit/gap analysis
+- `presales/handover.md` — confirmed requirements passed to Architecture
+
+**Source documents:**
+{% for doc in source_documents | default([]) %}
+- {{ doc }}
+{% endfor %}

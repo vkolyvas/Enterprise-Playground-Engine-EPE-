@@ -1,0 +1,114 @@
+---
+contract: architecture.validation
+version: 1
+stage: architecture
+type: decision
+status: {{ status | default('proposed') }}
+owner: {{ owner | default('lead-architect') }}
+opportunity: {{ opportunity | default('OPP-00000') }}
+inputs:
+  - presales/handover.md
+outputs:
+  - architecture/hld.md
+requirements: {{ requirements | default([]) }}
+risks: []
+decisions: [{{ id | default('DEC-000') }}]
+created: {{ created_date | default('YYYY-MM-DD') }}
+---
+
+# Architecture Decision Record: {{ title | default('[Title]') }}
+
+| Field | Value |
+|-------|-------|
+| ADR ID | {{ id | default('DEC-000') }} |
+| Date | {{ created_date | default('YYYY-MM-DD') }} |
+| Status | {{ status | default('proposed') }} |
+| Owner | {{ owner | default('lead-architect') }} |
+| Opportunity | {{ opportunity | default('OPP-00000') }} |
+
+---
+
+## Context
+
+[Describe the situation and why this decision is needed.
+What constraints or requirements drove this decision?
+What alternatives were considered?]
+
+---
+
+## Decision
+
+[Describe the decision that has been made.
+What was chosen and why?]
+
+---
+
+## Options Considered
+
+### Option A: [Name]
+
+**Description:**
+
+**Pros:**
+- .
+
+**Cons:**
+- .
+
+### Option B: [Name]
+
+**Description:**
+
+**Pros:**
+- .
+
+**Cons:**
+- .
+
+### Option C: [Name] ← **Selected**
+
+**Description:**
+
+**Pros:**
+- .
+
+**Cons:**
+- .
+
+---
+
+## Consequences
+
+### Positive
+- .
+
+### Negative
+- .
+
+### Neutral
+- .
+
+---
+
+## Requirements Linked
+
+| REQ-ID | Requirement |
+|--------|-------------|
+| REQ-000 | |
+
+---
+
+## Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|-----------|
+| | | | |
+
+---
+
+## Traceability
+
+- Decision made in: `architecture/hld.md`
+- Implements: REQ-000, REQ-000
+- Supersedes: [Previous ADR if applicable]
+- Next review: [Date or condition]

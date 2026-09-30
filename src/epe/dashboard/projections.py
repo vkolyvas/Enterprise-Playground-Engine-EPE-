@@ -141,6 +141,101 @@ def _handover_readiness(artifacts: list[dict]) -> dict:
     }
 
 
+def lifecycle_documents_summary(project_root: Path) -> dict:
+    """Full lifecycle document view across all stages."""
+    from epe.tracking.registry import DocumentRegistry
+    from epe.tracking.lineage import LineageComputer
+    from epe.validation.completeness import validate_gate_completeness
+
+    registry = DocumentRegistry.from_project(project_root, project_root.name)
+    lineage = LineageComputer(registry)
+    gate_status = validate_gate_completeness(project_root, registry)
+    traceability_matrix = lineage.build_traceability_matrix()
+
+    return {
+        "project_id": project_root.name,
+        "stages": registry.stage_summary(),
+        "gate_status": {
+            stage: {
+                "readiness": info["readiness"],
+                "completeness_score": info["completeness_score"],
+                "all_approved": info["all_approved"],
+                "missing_documents": info["missing_documents"],
+            }
+            for stage, info in gate_status.items()
+        },
+        "documents": registry.to_dict(),
+        "traceability_matrix": traceability_matrix,
+    }
+
+
+def lifecycle_stage_view(project_root: Path, stage: str) -> dict:
+    """Detailed view for a single stage."""
+    from epe.tracking.registry import DocumentRegistry
+    from epe.tracking.lineage import LineageComputer
+    from epe.validation.completeness import validate_stage_completeness
+
+    registry = DocumentRegistry.from_project(project_root, project_root.name)
+    lineage = LineageComputer(registry)
+    completeness = validate_stage_completeness(project_root, stage, registry)
+    stage_docs = registry.by_stage(stage)
+
+    return {
+        "stage": stage,
+        "completeness": completeness,
+        "documents": [d.to_dict() for d in stage_docs],
+        "handover_status": lineage.stage_handoff_status(
+            stage, {"product": "presales", "presales": "architecture", "architecture": "delivery"}.get(stage, "")
+        ) if stage != "delivery" else None,
+    }
+
+
+def lifecycle_lineage_view(project_root: Path, doc_id: str) -> dict:
+    """Full lineage chain for a specific document."""
+    from epe.tracking.registry import DocumentRegistry
+    from epe.tracking.lineage import LineageComputer
+
+    registry = DocumentRegistry.from_project(project_root, project_root.name)
+    lineage = LineageComputer(registry)
+
+    forward = lineage.trace_from_document(doc_id)
+    backward = lineage.trace_to_document(doc_id)
+
+    return {
+        "doc_id": doc_id,
+        "forward_chain": forward.to_dict(),
+        "backward_chain": backward.to_dict(),
+    }
+
+
+def lifecycle_gates_view(project_root: Path) -> dict:
+    """Gate readiness matrix."""
+    from epe.tracking.registry import DocumentRegistry
+    from epe.tracking.lineage import LineageComputer
+    from epe.validation.completeness import validate_gate_completeness
+
+    registry = DocumentRegistry.from_project(project_root, project_root.name)
+    gate_status = validate_gate_completeness(project_root, registry)
+
+    # Per-stage handoff status
+    transitions = [
+        ("product", "presales"),
+        ("presales", "architecture"),
+        ("architecture", "delivery"),
+    ]
+    lineage = LineageComputer(registry)
+    handoff_status = {
+        f"{f}->{t}": lineage.stage_handoff_status(f, t)
+        for f, t in transitions
+    }
+
+    return {
+        "project_id": project_root.name,
+        "gate_status": gate_status,
+        "handoff_status": handoff_status,
+    }
+
+
 def project_dashboard_markdown(project_root: Path) -> str:
     """Render the human-readable dashboard as Markdown."""
     summary = project_summary(project_root)

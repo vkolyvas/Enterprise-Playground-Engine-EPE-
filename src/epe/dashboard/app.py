@@ -14,6 +14,10 @@ from epe.dashboard.projections import (
     project_list,
     project_state,
     project_summary,
+    lifecycle_documents_summary,
+    lifecycle_stage_view,
+    lifecycle_lineage_view,
+    lifecycle_gates_view,
 )
 
 
@@ -59,6 +63,37 @@ def create_app(*, config_path: Path | None = None) -> FastAPI:
     @app.get("/config")
     def get_config() -> dict:
         return config.model_dump(mode="json")
+
+    # Lifecycle document views
+    @app.get("/projects/{project_id}/lifecycle/documents")
+    def get_lifecycle_documents(project_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return lifecycle_documents_summary(proj_root)
+
+    @app.get("/projects/{project_id}/lifecycle/stages/{stage}")
+    def get_lifecycle_stage(project_id: str, stage: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        if stage not in ("product", "presales", "architecture", "delivery"):
+            raise HTTPException(400, f"Invalid stage: {stage}")
+        return lifecycle_stage_view(proj_root, stage)
+
+    @app.get("/projects/{project_id}/lifecycle/lineage/{doc_id:path}")
+    def get_lifecycle_lineage(project_id: str, doc_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return lifecycle_lineage_view(proj_root, doc_id)
+
+    @app.get("/projects/{project_id}/lifecycle/gates")
+    def get_lifecycle_gates(project_id: str) -> dict:
+        proj_root = paths.projects_root / project_id
+        if not proj_root.exists():
+            raise HTTPException(404, f"No such project: {project_id}")
+        return lifecycle_gates_view(proj_root)
 
     return app
 

@@ -1,0 +1,136 @@
+---
+contract: presales.scope
+version: 1
+stage: presales
+type: instance
+status: draft
+owner: {{ owner | default('solutions-engineering') }}
+opportunity: {{ opportunity | default('OPP-00000') }}
+customer: {{ customer | default('[Customer Name]') }}
+inputs:
+  - presales/discovery.md
+  - product/readiness.md
+outputs:
+  - presales/handover.md
+requirements: []
+risks: []
+decisions: []
+created: {{ created_date | default('YYYY-MM-DD') }}
+---
+
+# Requirements Matrix
+
+## Document Metadata
+
+| Field | Value |
+|-------|-------|
+| Opportunity | {{ opportunity | default('OPP-00000') }} |
+| Customer | {{ customer | default('[Customer Name]') }} |
+| Date | {{ created_date | default('YYYY-MM-DD') }} |
+| Owner | {{ owner | default('solutions-engineering') }} |
+
+---
+
+## Requirements Table
+
+| REQ-ID | Customer Requirement | Source | Priority | Type | Product Capability | Fit Status | Gap / Workaround | Architecture Notes |
+|--------|---------------------|--------|----------|------|-------------------|------------|------------------|-------------------|
+| REQ-001 | | | Must / Should / Could / Won't | | NATIVE / CONFIGURATION / INTEGRATION / CUSTOMIZATION / GAP / ROADMAP | | |
+| REQ-002 | | | | | | | |
+| REQ-003 | | | | | | | |
+| REQ-004 | | | | | | | |
+| REQ-005 | | | | | | | |
+
+---
+
+## Fit Status Legend
+
+| Status | Meaning |
+|--------|---------|
+| NATIVE | Fully supported by product without configuration |
+| CONFIGURATION | Supported via product configuration |
+| INTEGRATION | Requires integration with external system |
+| CUSTOMIZATION | Requires custom development |
+| ROADMAP | On product roadmap, timeline TBD |
+| GAP | Not supported, no roadmap item |
+| UNKNOWN | Requires further investigation |
+
+---
+
+## Non-Functional Requirements
+
+| NFR-ID | Requirement | Source | Target | Fit Status |
+|--------|-------------|--------|--------|------------|
+| NFR-001 | Availability: | | | |
+| NFR-002 | Performance: | | | |
+| NFR-003 | Security: | | | |
+| NFR-004 | Scalability: | | | |
+| NFR-005 | Recoverability: | | | |
+
+---
+
+## Product Gaps
+
+For each GAP-fit item, describe the business impact and any proposed workarounds:
+
+| REQ-ID | Gap Description | Business Impact | Proposed Workaround |
+|--------|----------------|-----------------|--------------------|
+| | | | |
+
+---
+
+## Custom Requirements
+
+List requirements that require custom development:
+
+| REQ-ID | Description | Complexity | Effort | Risk |
+|--------|-------------|-------------|-------|------|
+| | | Low/Med/High | | Low/Med/High |
+
+---
+
+## Integrations Required
+
+| Integration | Systems Connected | Complexity | CAP-NNN |
+|-------------|------------------|------------|---------|
+| | | | CAP-000 |
+
+---
+
+## Security Requirements
+
+| REQ-ID | Requirement | Compliance Frameworks | Implementation Notes |
+|--------|-------------|----------------------|---------------------|
+| | | | |
+
+---
+
+## Open Questions
+
+| Q-ID | Question | Blocking? | Owner | Due Date |
+|------|----------|-----------|-------|----------|
+| Q-001 | | Yes/No | | |
+
+---
+
+## Assumptions
+
+1.
+2.
+3.
+
+---
+
+## Constraints
+
+1.
+2.
+
+---
+
+## Traceability
+
+- Captured from: `presales/discovery.md`
+- Confirmed requirements feed into: `presales/handover.md`
+- Product capabilities referenced: CAP-NNN list
+- Decisions required: DEC-NNN list

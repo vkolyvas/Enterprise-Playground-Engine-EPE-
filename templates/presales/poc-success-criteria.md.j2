@@ -1,0 +1,147 @@
+---
+contract: presales.scope
+version: 1
+stage: presales
+type: instance
+status: draft
+owner: {{ owner | default('solutions-engineering') }}
+opportunity: {{ opportunity | default('OPP-00000') }}
+customer: {{ customer | default('[Customer Name]') }}
+inputs:
+  - presales/discovery.md
+  - presales/requirements-matrix.md
+outputs:
+  - presales/handover.md
+requirements: []
+risks: []
+decisions: []
+created: {{ created_date | default('YYYY-MM-DD') }}
+---
+
+# POC / POV Success Criteria
+
+> **Purpose:** Prevent POC creep by defining 3–5 measurable success criteria
+> before the POC begins. Criteria must be objectively verifiable.
+
+## Document Metadata
+
+| Field | Value |
+|-------|-------|
+| Opportunity | {{ opportunity | default('OPP-00000') }} |
+| Customer | {{ customer | default('[Customer Name]') }} |
+| POC Start | |
+| POC End | |
+| Owner | {{ owner | default('solutions-engineering') }} |
+
+---
+
+## Objective
+
+> **What is the primary question this POC will answer?**
+
+Describe the specific problem or hypothesis being tested:
+
+1.
+2.
+
+---
+
+## Out of Scope
+
+The following are explicitly NOT part of this POC:
+
+- .
+- .
+
+---
+
+## Success Criteria
+
+All criteria must be **objectively measurable**. Each criterion must have a clear
+pass/fail threshold before the POC begins.
+
+| SC-ID | Description | Target | Measurement Method | Evidence Required |
+|-------|-------------|--------|-------------------|------------------|
+| SC-001 | | | | |
+| SC-002 | | | | |
+| SC-003 | | | | |
+| SC-004 | | | | |
+| SC-005 | | | | |
+
+### SC-001: [Name]
+
+**Description:** [What this tests]
+
+**Target:** [Specific, measurable target]
+
+**Measurement Method:** [How to measure — script, log, screenshot, etc.]
+
+**Evidence Required:**
+- [ ]
+- [ ]
+
+**Pass Threshold:** [e.g., "Latency < 200ms for 95th percentile over 30 minutes"]
+
+---
+
+## Environment
+
+| Item | Details |
+|------|---------|
+| Environment type | Dev / Staging / Production-like |
+| Access credentials | |
+| Network configuration | |
+| Test data | |
+
+---
+
+## Prerequisites
+
+Before the POC begins, the following must be in place:
+
+- [ ]
+- [ ]
+
+---
+
+## Participants
+
+| Name | Role | Time Commitment |
+|------|------|----------------|
+| | | |
+
+---
+
+## Timeline
+
+| Phase | Start | End | Deliverable |
+|-------|-------|-----|-------------|
+| Setup | | | Environment ready |
+| Execution | | | Evidence collected |
+| Evaluation | | | Results documented |
+
+---
+
+## Exit Criteria
+
+The POC is considered complete when:
+
+- [ ] All SC-001 through SC-00N evidence collected
+- [ ] Results documented
+- [ ] Go/No-Go recommendation decided
+
+---
+
+## Commercial Next Step
+
+Following POC completion, the next commercial step is:
+
+> **Answer:**
+
+---
+
+## Traceability
+
+- Requirements tested: REQ-001, REQ-002, ...
+- Capabilities demonstrated: CAP-001, CAP-002, ...
+- Results feed into: `presales/handover.md`

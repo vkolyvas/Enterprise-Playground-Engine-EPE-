@@ -1,0 +1,149 @@
+---
+contract: delivery.test
+version: 1
+stage: delivery
+type: instance
+status: draft
+owner: {{ owner | default('delivery-lead') }}
+opportunity: {{ opportunity | default('OPP-00000') }}
+inputs:
+  - architecture/blueprint.md
+outputs:
+  - delivery/acceptance.md
+requirements: {{ requirements | default([]) }}
+risks: []
+decisions: []
+tests: []
+created: {{ created_date | default('YYYY-MM-DD') }}
+---
+
+# Test Plan
+
+## Document Metadata
+
+| Field | Value |
+|-------|-------|
+| Opportunity | {{ opportunity | default('OPP-00000') }} |
+| Date | {{ created_date | default('YYYY-MM-DD') }} |
+| Owner | {{ owner | default('delivery-lead') }} |
+| Architecture | `architecture/blueprint.md` |
+
+---
+
+## 1. Test Overview
+
+### 1.1 Objectives
+
+> **What does this test plan verify?**
+
+- [ ] Solution meets all confirmed requirements (REQ-NNN)
+- [ ] Non-functional requirements are satisfied
+- [ ] Integration points work as specified
+- [ ] Security controls are effective
+
+### 1.2 Scope
+
+**In scope:**
+- .
+- .
+
+**Out of scope:**
+- .
+- .
+
+---
+
+## 2. Test Cases
+
+Every test case traces to at least one requirement.
+
+### Functional Tests
+
+| TEST-ID | Test Case | Requirement | Preconditions | Procedure | Expected Result | Status | Result | Evidence |
+|---------|-----------|-------------|---------------|-----------|----------------|--------|--------|---------|
+| TEST-001 | | REQ-000 | | | | Not Run | | |
+| TEST-002 | | REQ-000 | | | | Not Run | | |
+| TEST-003 | | REQ-000 | | | | Not Run | | |
+
+### Non-Functional Tests
+
+| TEST-ID | Test Case | NFR | Target | Procedure | Actual Result | Status | Evidence |
+|---------|-----------|-----|--------|-----------|---------------|--------|---------|
+| TEST-NF-001 | Performance: Response time | NFR-001 | < 200ms | | | Not Run | |
+| TEST-NF-002 | Load: Concurrent users | NFR-002 | 1000 users | | | Not Run | |
+| TEST-NF-003 | Security: Auth bypass | NFR-003 | No bypass | | | Not Run | |
+
+### Integration Tests
+
+| TEST-ID | Test Case | Integration | CAP-NNN | Procedure | Expected | Actual | Status |
+|---------|-----------|-------------|---------|-----------|---------|--------|--------|
+| TEST-INT-001 | | | CAP-000 | | | | Not Run |
+
+---
+
+## 3. Test Status Legend
+
+| Status | Meaning |
+|--------|---------|
+| Not Run | Test not yet executed |
+| Passed | Test executed, criteria met |
+| Failed | Test executed, criteria not met |
+| Blocked | Test cannot run due to dependency |
+| Waived | Test waived with justification |
+
+---
+
+## 4. Environment
+
+| Environment | URL | Credentials | Notes |
+|-------------|-----|-------------|-------|
+| Dev | | | |
+| Staging | | | |
+| Production | | | |
+
+---
+
+## 5. Test Data
+
+| Dataset | Description | Source | Privacy |
+|---------|-------------|--------|---------|
+| | | | |
+
+---
+
+## 6. Defects
+
+| DEF-ID | Test | Description | Severity | Status | Fix Version |
+|--------|------|-------------|----------|--------|-------------|
+| | | | Critical / High / Med / Low | Open / Fixed | |
+
+---
+
+## 7. Traceability Matrix
+
+| Requirement | TEST-001 | TEST-002 | TEST-003 | TEST-NF-001 | TEST-INT-001 |
+|-------------|----------|----------|----------|-------------|--------------|
+| REQ-001 | ✓ | | | | |
+| REQ-002 | | ✓ | | | |
+| REQ-003 | | | ✓ | | |
+| NFR-001 | | | | ✓ | |
+| CAP-001 | | | | | ✓ |
+
+---
+
+## 8. Sign-off
+
+| Role | Name | Date | Signature |
+|------|------|------|-----------|
+| Test Lead | | | |
+| Delivery Lead | | | |
+| Customer | | | |
+
+---
+
+## Traceability
+
+- Generated from: `architecture/blueprint.md`
+- Tests verify: REQ-NNN list
+- Components tested: COMP-NNN list
+- Evidence feeds into: `delivery/acceptance.md`
