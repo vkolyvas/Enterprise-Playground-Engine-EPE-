@@ -115,15 +115,19 @@ def hybrid_retrieve(
 
 
 def format_results_for_prompt(results: Iterable[RetrievalResult]) -> str:
-    """Format retrieval results as XML-delimited untrusted blocks for the LLM."""
+    """Format retrieval results as compact evidence blocks for the LLM prompt.
+
+    Produces clean, compact blocks that won't overwhelm context limits.
+    Each block shows the source ID and a truncated snippet.
+    """
     blocks: list[str] = []
     for r in results:
         item = r.item
+        # Truncate long chunks to ~800 chars to keep context manageable
+        text = item.text
+        if len(text) > 800:
+            text = text[:800].rsplit(" ", 1)[0] + " [...]"
         blocks.append(
-            f"<<<UNTRUSTED_SOURCE_DOCUMENT doc={item.source_document_id} chunk={item.chunk_id} "
-            f"namespace={item.namespace} authority={item.authority} "
-            f"sensitivity={item.sensitivity} confidence={item.confidence}>>>\n"
-            f"{item.text}\n"
-            f"<<<END_UNTRUSTED>>>"
+            f"[{item.source_document_id}] {text}"
         )
-    return "\n\n".join(blocks)
+    return "\n\n".join(blocks) if blocks else "(no evidence retrieved)"

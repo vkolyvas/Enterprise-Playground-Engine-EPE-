@@ -98,6 +98,10 @@ def stage_run(stage_name: str, project_id: str, opportunity: str | None,
     config, paths = _build_paths(project_id=project_id)
     paths.ensure_project_layout()
     knowledge = _build_knowledge(config, paths)
+    # Load indexed chunks and global knowledge namespace before running any stage.
+    knowledge.load_from_processed(paths.sources_processed / project_id)
+    for ns in config.stage(stage_name).knowledge:
+        knowledge.load_namespace(ns)
     llm = make_llm_provider(config.models.llm)
     ctx = StageContext(
         config=config,

@@ -90,14 +90,54 @@ class AnthropicLLMProvider:
         max_tokens: int,
         temperature: float,
     ) -> str:
-        msg = self._client.messages.create(
-            model=self._model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=system,
-            messages=[{"role": "user", "content": prompt}],
-        )
+        # Try streaming first to avoid long-lived connection timeouts.
+        # MiniMax endpoint may not support temperature in stream() mode,
+        # so fall back without it if needed.
         parts: list[str] = []
+        try:
+            with self._client.messages.stream(
+                model=self._model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=system,
+                messages=[{"role": "user", "content": prompt}],
+            ) as stream:
+                msg = stream.get_final_message()
+        except TypeError:
+            # Endpoint doesn't support temperature in stream() — retry without it.
+            try:
+                with self._client.messages.stream(
+                    model=self._model,
+                    max_tokens=max_tokens,
+                    system=system,
+                    messages=[{"role": "user", "content": prompt}],
+                ) as stream:
+                    msg = stream.get_final_message()
+            except TypeError:
+                # Streaming not supported — fall back to non-streaming create().
+                try:
+                    msg = self._client.messages.create(
+                        model=self._model,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        system=system,
+                        messages=[{"role": "user", "content": prompt}],
+                    )
+                except TypeError:
+                    # Temperature not supported — final fallback without it.
+                    msg = self._client.messages.create(
+                        model=self._model,
+                        max_tokens=max_tokens,
+                        system=system,
+                        messages=[{"role": "user", "content": prompt}],
+                    )
+                # Non-streaming: content is directly on msg.content
+                for block in msg.content:
+                    if hasattr(block, "text"):
+                        parts.append(block.text)
+                return "\n".join(parts)
+
+        # Streaming path: extract text from message
         for block in msg.content:
             if hasattr(block, "text"):
                 parts.append(block.text)
