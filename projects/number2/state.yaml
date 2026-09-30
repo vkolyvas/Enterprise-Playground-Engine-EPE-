@@ -1,0 +1,19 @@
+project_id: number2
+stage: product
+status: active
+gates:
+  product:
+    status: pending
+  presales:
+    qualification: pending
+    scope: pending
+    handover: pending
+  architecture:
+    requirements: pending
+    hld: pending
+    lld: pending
+  delivery:
+    deployment: pending
+    acceptance: pending
+history: []
+customer: Test Customer
